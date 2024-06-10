@@ -1,0 +1,26 @@
+# Define a dictionary for automatic name translation
+name_translation_dict = {
+  '咲季': 'Saki',
+  '佑芽': 'Ume',
+  '手毬': 'Temari',
+  'ことね': 'Kotone',
+  'リーリヤ': 'Lilja',
+  '千奈': 'China',
+  '清夏': 'Sumika',
+  '麻央': 'Mao',
+  '広': 'Hiro',
+  '莉波': 'Rinami',
+  '美鈴': 'Misuzu',
+  '星南': 'Sena',
+  '邦夫': 'Kunio',
+  '亜紗里': 'Asari',
+  'あさり先生': 'Asari-Sensei',
+  'ボイストレーナー': 'Voice Trainer',
+  'ダンストレーナー': 'Dance Trainer',
+  'ビジュアルトレーナー': 'Visual Trainer',
+  'ボーカルトレーナー': 'Vocal Trainer',
+  '？？？':'？？？',
+  '女子生徒':'Schoolgirl',
+  '一同':'Everyone',
+  '{user}': '{user}'  # Producer custom name. Leave '{user}' intact.
+}
