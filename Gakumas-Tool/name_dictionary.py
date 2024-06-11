@@ -21,6 +21,8 @@ name_translation_dict = {
   'ボーカルトレーナー': 'Vocal Trainer',
   '？？？':'？？？',
   '女子生徒':'Schoolgirl',
+  'スタッフ':'Staff',
+  '担任教師': 'Homeroom Teacher',
   '一同':'Everyone',
   '{user}': '{user}'  # Producer custom name. Leave '{user}' intact.
 }
