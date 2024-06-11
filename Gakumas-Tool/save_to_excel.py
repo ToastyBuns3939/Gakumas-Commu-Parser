@@ -9,14 +9,15 @@ def translate_names(names):
     return translated_names
 
 def save_to_excel(names, texts, types, output_path, worksheet_name):
+    existing_row_count = 0
+
     if os.path.exists(output_path):  # Check if output file already exists
         existing_df = pd.read_excel(output_path)  # Read existing Excel file
+        existing_row_count = len(existing_df)  # Store the existing row count
 
         # Cast all columns to object dtype to ensure compatibility when replacing nan with ''
         existing_df = existing_df.astype(object)
-
         existing_df.fillna('', inplace=True)  # Replace nan with empty strings
-
         existing_df['text'] = existing_df['text'].astype(str)
         
         # Check and rename 'translated' column if it exists
@@ -76,32 +77,36 @@ def save_to_excel(names, texts, types, output_path, worksheet_name):
     df = df.astype(object)  # Ensure all columns are treated as object dtype
     df.fillna('', inplace=True)
 
-    # Create a Pandas Excel writer using xlsxwriter as the engine
-    writer = pd.ExcelWriter(output_path, engine='xlsxwriter')
+    new_row_count = len(df)  # Get the new row count
 
-    # Write the DataFrame to the Excel file with the specified worksheet name
-    df.to_excel(writer, index=False, sheet_name=worksheet_name, na_rep='')
+    # Only proceed to save the file if the row count has changed
+    if existing_row_count != new_row_count:
+        # Create a Pandas Excel writer using xlsxwriter as the engine
+        writer = pd.ExcelWriter(output_path, engine='xlsxwriter')
 
-    # Get the xlsxwriter workbook and worksheet objects
-    workbook = writer.book
-    worksheet = writer.sheets[worksheet_name]
+        # Write the DataFrame to the Excel file with the specified worksheet name
+        df.to_excel(writer, index=False, sheet_name=worksheet_name, na_rep='')
 
-    # Define a format for cell alignment and text wrapping
-    dialogue_format = workbook.add_format({'align': 'left', 'valign': 'top', 'text_wrap': True})
-    name_format = workbook.add_format({'align': 'center', 'valign': 'vcenter'})
+        # Get the xlsxwriter workbook and worksheet objects
+        workbook = writer.book
+        worksheet = writer.sheets[worksheet_name]
 
-    # Set column widths
-    worksheet.set_column('A:A', 15, name_format)  # type column
-    worksheet.set_column('B:B', 15, name_format)  # name column
-    worksheet.set_column('C:C', 15, name_format)  # translated name column
-    worksheet.set_column('D:D', 70, dialogue_format)  # text column
-    worksheet.set_column('E:E', 70, dialogue_format)  # translated column
+        # Define a format for cell alignment and text wrapping
+        dialogue_format = workbook.add_format({'align': 'left', 'valign': 'top', 'text_wrap': True})
+        name_format = workbook.add_format({'align': 'center', 'valign': 'vcenter'})
 
-    # Adjust row heights automatically based on the content
-    for i, jp_text in enumerate(df['text']):
-        line_breaks = jp_text.count('\n') + 1
-        row_height = 15 * line_breaks  # Assuming default row height is 15 units
-        worksheet.set_row(i + 1, row_height)
+        # Set column widths
+        worksheet.set_column('A:A', 15, name_format)  # type column
+        worksheet.set_column('B:B', 15, name_format)  # name column
+        worksheet.set_column('C:C', 15, name_format)  # translated name column
+        worksheet.set_column('D:D', 70, dialogue_format)  # text column
+        worksheet.set_column('E:E', 70, dialogue_format)  # translated column
 
-    # Close the Pandas Excel writer and save the Excel file
-    writer.close()
+        # Adjust row heights automatically based on the content
+        for i, jp_text in enumerate(df['text']):
+            line_breaks = jp_text.count('\n') + 1
+            row_height = 15 * line_breaks  # Assuming default row height is 15 units
+            worksheet.set_row(i + 1, row_height)
+
+        # Close the Pandas Excel writer and save the Excel file
+        writer.close()
