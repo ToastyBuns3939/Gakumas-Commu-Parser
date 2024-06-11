@@ -1,6 +1,6 @@
 # Original version
 # It works, but for some reason, original .txt lines that contain line breaks wont be injected with translated lines.
-#
+
 # import pandas as pd
 # 
 # def inject_translations(txt_path, xlsx_path, output_path):
