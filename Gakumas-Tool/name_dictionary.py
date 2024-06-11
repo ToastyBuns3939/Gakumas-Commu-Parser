@@ -24,5 +24,5 @@ name_translation_dict = {
   'スタッフ':'Staff',
   '担任教師': 'Homeroom Teacher',
   '一同':'Everyone',
-  '{user}': '{user}'  # Producer custom name. Leave '{user}' intact.
+  '{user}': '{user}'  # Producer custom name, leave intact
 }
