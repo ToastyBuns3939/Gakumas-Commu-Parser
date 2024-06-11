@@ -11,6 +11,12 @@ def translate_names(names):
 def save_to_excel(names, texts, types, output_path, worksheet_name):
     if os.path.exists(output_path):  # Check if output file already exists
         existing_df = pd.read_excel(output_path)  # Read existing Excel file
+
+        # Cast all columns to object dtype to ensure compatibility when replacing nan with ''
+        existing_df = existing_df.astype(object)
+
+        existing_df.fillna('', inplace=True)  # Replace nan with empty strings
+
         existing_df['text'] = existing_df['text'].astype(str)
         
         # Check and rename 'translated' column if it exists
@@ -66,14 +72,15 @@ def save_to_excel(names, texts, types, output_path, worksheet_name):
     for original_name, translated_name in zip(names, translated_names):
         df.loc[df['name'] == original_name, 'translated name'] = translated_name
 
-    # Debug: print the DataFrame to check if 'translated name' is filled correctly
-    #  print(df)
+    # Handle nan values by filling them with empty strings
+    df = df.astype(object)  # Ensure all columns are treated as object dtype
+    df.fillna('', inplace=True)
 
     # Create a Pandas Excel writer using xlsxwriter as the engine
     writer = pd.ExcelWriter(output_path, engine='xlsxwriter')
 
     # Write the DataFrame to the Excel file with the specified worksheet name
-    df.to_excel(writer, index=False, sheet_name=worksheet_name)
+    df.to_excel(writer, index=False, sheet_name=worksheet_name, na_rep='')
 
     # Get the xlsxwriter workbook and worksheet objects
     workbook = writer.book
