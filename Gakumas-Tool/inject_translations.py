@@ -1,6 +1,12 @@
+import os
 import pandas as pd
 
 def inject_translations(txt_path, xlsx_path, output_path):
+    # Check if the Excel file exists
+    if not os.path.exists(xlsx_path):
+        print(f"Error: No such file or directory: '{xlsx_path}'")
+        return
+    
     # Read the Excel file
     df = pd.read_excel(xlsx_path)
 
@@ -23,21 +29,22 @@ def inject_translations(txt_path, xlsx_path, output_path):
     with open(output_path, 'w', encoding='utf-8') as file:
         for line in lines:
             original_line = line.strip()
+            injected_line = original_line
 
             # Inject translated names sequentially
             for original_text, translated_text, original_name, translated_name in translation_pairs:
-                if f'name={original_name}' in original_line:
-                    original_line = original_line.replace(f'name={original_name}', f'name={translated_name}')
+                if f'name={original_name}' in injected_line:
+                    injected_line = injected_line.replace(f'name={original_name}', f'name={translated_name}')
 
-            # Inject translated texts sequentially
+            # Inject translated texts sequentially, handling line breaks
             for original_text, translated_text, _, _ in translation_pairs:
-                if f'text={original_text}' in original_line:
-                    original_line = original_line.replace(f'text={original_text}', f'text={translated_text}')
+                if f'text={original_text}' in injected_line and translated_text.strip():
+                    injected_line = injected_line.replace(f'text={original_text}', f'text={translated_text}')
 
             # Ensure that choice texts are not overwritten
-            if '[choice' in original_line:
+            if '[choice' in injected_line:
                 for original_text, translated_text, _, _ in translation_pairs:
-                    if f'choice text={original_text}' in original_line:
-                        original_line = original_line.replace(f'choice text={original_text}', f'choice text={translated_text}')
+                    if f'choice text={original_text}' in injected_line and translated_text.strip():
+                        injected_line = injected_line.replace(f'choice text={original_text}', f'choice text={translated_text}')
 
-            file.write(original_line + '\n')
+            file.write(injected_line + '\n')
