@@ -1,10 +1,10 @@
-import os
 import pandas as pd
+import os
 
 def inject_translations(txt_path, xlsx_path, output_path):
     # Check if the Excel file exists
-    if not os.path.exists(xlsx_path):
-        print(f"Error: No such file or directory: '{xlsx_path}'")
+    if not os.path.isfile(xlsx_path):
+        print(f"Excel file not found: {xlsx_path}")
         return
     
     # Read the Excel file
@@ -20,31 +20,38 @@ def inject_translations(txt_path, xlsx_path, output_path):
     df['text'] = df['text'].apply(lambda x: x.replace('\n', '\\n'))
     df['translated text'] = df['translated text'].apply(lambda x: x.replace('\n', '\\n'))
 
-    # Create a list of tuples with original and translated texts and names
-    translation_pairs = list(zip(df['text'], df['translated text'], df['name'], df['translated name']))
+    # Create a list of tuples with original and translated texts and names, excluding empty 'translated text'
+    translation_pairs = [(row['text'], row['translated text'], row['name'], row['translated name'])
+                         for _, row in df.iterrows() if row['translated text'].strip()]
 
+    # Check if the text file exists
+    if not os.path.isfile(txt_path):
+        print(f"Text file not found: {txt_path}")
+        return
+
+    # Read the text file
     with open(txt_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
 
+    # Open the output file for writing
     with open(output_path, 'w', encoding='utf-8') as file:
         for line in lines:
             original_line = line.strip()
-            injected_line = original_line
 
             # Inject translated names sequentially
             for original_text, translated_text, original_name, translated_name in translation_pairs:
-                if f'name={original_name}' in injected_line:
-                    injected_line = injected_line.replace(f'name={original_name}', f'name={translated_name}')
+                if f'name={original_name}' in original_line:
+                    original_line = original_line.replace(f'name={original_name}', f'name={translated_name}')
 
-            # Inject translated texts sequentially, handling line breaks
+            # Inject translated texts sequentially
             for original_text, translated_text, _, _ in translation_pairs:
-                if f'text={original_text}' in injected_line and translated_text.strip():
-                    injected_line = injected_line.replace(f'text={original_text}', f'text={translated_text}')
+                if f'text={original_text}' in original_line:
+                    original_line = original_line.replace(f'text={original_text}', f'text={translated_text}')
 
             # Ensure that choice texts are not overwritten
-            if '[choice' in injected_line:
+            if '[choice' in original_line:
                 for original_text, translated_text, _, _ in translation_pairs:
-                    if f'choice text={original_text}' in injected_line and translated_text.strip():
-                        injected_line = injected_line.replace(f'choice text={original_text}', f'choice text={translated_text}')
+                    if f'choice text={original_text}' in original_line:
+                        original_line = original_line.replace(f'choice text={original_text}', f'choice text={translated_text}')
 
-            file.write(injected_line + '\n')
+            file.write(original_line + '\n')

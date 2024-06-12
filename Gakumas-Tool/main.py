@@ -59,7 +59,7 @@ def main():
                         output_path = os.path.join(output_folder, file_name)
 
                         inject_translations(txt_path, xlsx_path, output_path)
-                        print(f"Translation injected for {file_name}")
+                        print(f"{file_name} processed")
                 
                 print("Translation injection completed successfully.")
 
