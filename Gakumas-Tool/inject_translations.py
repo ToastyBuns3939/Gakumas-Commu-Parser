@@ -43,8 +43,8 @@ def inject_translations(txt_path, xlsx_path, output_path):
                         original_line = original_line.replace(f'choice text={original_text}', f'choice text={translated_text}')
 
             file.write(original_line + '\n')
-            
-# Experimental version
+
+#Experimental version
 #
 #import pandas as pd
 #import re
