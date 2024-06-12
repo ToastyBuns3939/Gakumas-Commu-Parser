@@ -61,13 +61,13 @@ def save_to_excel(names, texts, types, output_path, worksheet_name):
     # Remove "name=" from the "text" column
     df['text'] = df['text'].str.replace(r' name=.*$', '', regex=True)
 
-    # Convert "\\n" to line breaks in the "text" column
-    df['text'] = df['text'].str.replace(r'\\n', '\n', regex=True)
-
     # Fill in existing translations
     for original_text, translated_text, original_name, translated_name, _ in translation_pairs:
         df.loc[df['text'] == original_text, 'translated text'] = translated_text
         df.loc[df['name'] == original_name, 'translated name'] = translated_name
+
+    # Convert "\\n" to line breaks in the "text" column
+    df['text'] = df['text'].str.replace(r'\\n', '\n', regex=True)
 
     # Update translated names
     for original_name, translated_name in zip(names, translated_names):

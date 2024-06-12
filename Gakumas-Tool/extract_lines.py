@@ -42,6 +42,7 @@ def extract_lines(file_path):
 
                 if text_match:
                     jp_text = text_match.group(1).strip()
+                    jp_text = jp_text.replace('\n','\\n')
                     if not name_match:
                         names.append('')  # Append empty string if no name field found
                     else:
