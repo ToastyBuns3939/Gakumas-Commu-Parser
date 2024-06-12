@@ -25,5 +25,6 @@ name_translation_dict = {
   '担任教師': 'Homeroom Teacher',
   '一般生徒': 'General Student',
   '一同':'Everyone',
+  '学園長': 'Principal',
   '{user}': '{user}'  # Producer custom name, leave intact
 }
