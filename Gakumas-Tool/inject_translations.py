@@ -41,12 +41,14 @@ def inject_translations(txt_path, xlsx_path, output_path):
             # Inject translated names sequentially
             for original_text, translated_text, original_name, translated_name in translation_pairs:
                 if f'name={original_name}' in original_line:
-                    original_line = original_line.replace(f'name={original_name}', f'name={translated_name}')
+                    if translated_text != 'nan':
+                        original_line = original_line.replace(f'name={original_name}', f'name={translated_name}')
 
             # Inject translated texts sequentially
             for original_text, translated_text, _, _ in translation_pairs:
                 if f'text={original_text}' in original_line:
-                    original_line = original_line.replace(f'text={original_text}', f'text={translated_text}')
+                    if translated_text != 'nan':
+                        original_line = original_line.replace(f'text={original_text}', f'text={translated_text}')
 
             # Ensure that choice texts are not overwritten
             if '[choice' in original_line:
