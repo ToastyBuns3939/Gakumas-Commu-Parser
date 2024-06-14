@@ -54,6 +54,7 @@ def inject_translations(txt_path, xlsx_path, output_path):
             if '[choice' in original_line:
                 for original_text, translated_text, _, _ in translation_pairs:
                     if f'choice text={original_text}' in original_line:
-                        original_line = original_line.replace(f'choice text={original_text}', f'choice text={translated_text}')
+                        if translated_text != 'nan':
+                            original_line = original_line.replace(f'choice text={original_text}', f'choice text={translated_text}')
 
             file.write(original_line + '\n')
