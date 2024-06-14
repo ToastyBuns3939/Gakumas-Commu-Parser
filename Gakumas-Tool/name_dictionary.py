@@ -44,5 +44,7 @@ name_translation_dict = {
   '客':'Customer',
   '迷惑な客':'Annoying Customer',
   '学園長': 'Principal',
+  '観客': 'Audience',
+  '子供': 'Child',
   '{user}': '{user}'  # Producer custom name, leave intact
 }
