@@ -42,9 +42,11 @@ name_translation_dict = {
   '女性店員':'Female Clerk',
   'カフェ店員':'Cafe Clerk',
   '客':'Customer',
+  'アイドルA': 'Idol A',
   '迷惑な客':'Annoying Customer',
   '学園長': 'Principal',
   '観客': 'Audience',
   '子供': 'Child',
+  '副会長': 'Vice President',
   '{user}': '{user}'  # Producer custom name, leave intact
 }
