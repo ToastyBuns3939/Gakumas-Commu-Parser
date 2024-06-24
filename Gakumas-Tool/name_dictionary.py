@@ -34,6 +34,7 @@ name_translation_dict = {
   'ビジュアルトレーナー': 'Visual Trainer',
   'ボーカルトレーナー': 'Vocal Trainer',
   '？？？':'？？？',
+  '  ？？？':'  ？？？',
   '女子生徒':'Schoolgirl',
   'スタッフ':'Staff',
   '担任教師': 'Homeroom Teacher',
