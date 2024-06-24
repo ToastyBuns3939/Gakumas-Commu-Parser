@@ -38,18 +38,23 @@ def inject_translations(txt_path, xlsx_path, output_path):
         for line in lines:
             original_line = line.strip()
 
-            # Inject translations sequentially
-            if '[message' in original_line:
-                for original_text, translated_text, original_name, translated_name in translation_pairs:
-                    if f'name={original_name}' in original_line and f'text={original_text}' in original_line and translated_text != 'nan' and translated_name != 'nan':
+            # Inject translated names sequentially
+            for original_text, translated_text, original_name, translated_name in translation_pairs:
+                if f'name={original_name}' in original_line:
+                    if translated_text != 'nan':
                         original_line = original_line.replace(f'name={original_name}', f'name={translated_name}')
+
+            # Inject translated texts sequentially
+            for original_text, translated_text, _, _ in translation_pairs:
+                if f'text={original_text}' in original_line:
+                    if translated_text != 'nan':
                         original_line = original_line.replace(f'text={original_text}', f'text={translated_text}')
-                        translation_pairs.remove((original_text, translated_text, original_name, translated_name))
-                        break
-            elif '[choice' in original_line:
-                for original_text, translated_text, original_name, translated_name in translation_pairs:
-                    if f'text={original_text}' in original_line and translated_text != 'nan':
-                        original_line = original_line.replace(f'text={original_text}', f'text={translated_text}')
-                        translation_pairs.remove((original_text, translated_text, original_name, translated_name))
+
+            # Ensure that choice texts are not overwritten
+            if '[choice' in original_line:
+                for original_text, translated_text, _, _ in translation_pairs:
+                    if f'choice text={original_text}' in original_line:
+                        if translated_text != 'nan':
+                            original_line = original_line.replace(f'choice text={original_text}', f'choice text={translated_text}')
 
             file.write(original_line + '\n')
