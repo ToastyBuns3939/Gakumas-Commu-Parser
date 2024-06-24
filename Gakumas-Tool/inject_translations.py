@@ -40,16 +40,16 @@ def inject_translations(txt_path, xlsx_path, output_path):
 
             # Inject translations sequentially
             if '[message' in original_line:
-                for idx, (original_text, translated_text, original_name, translated_name) in enumerate(list(translation_pairs)):
+                for original_text, translated_text, original_name, translated_name in list(translation_pairs):
                     if f'name={original_name}' in original_line and f'text={original_text}' in original_line and translated_text != 'nan' and translated_name != 'nan':
                         original_line = original_line.replace(f'name={original_name}', f'name={translated_name}')
                         original_line = original_line.replace(f'text={original_text}', f'text={translated_text}')
-                        translation_pairs.pop(idx)
+                        translation_pairs.remove((original_text, translated_text, original_name, translated_name))
                         break
             elif '[choice' in original_line or '[narration' in original_line:
-                for idx, (original_text, translated_text, _, _) in enumerate(list(translation_pairs)):
+                for original_text, translated_text, original_name, translated_name in list(translation_pairs):
                     if f'text={original_text}' in original_line and translated_text != 'nan':
                         original_line = original_line.replace(f'text={original_text}', f'text={translated_text}')
-                        translation_pairs.pop(idx)
+                        translation_pairs.remove((original_text, translated_text, original_name, translated_name))
 
             file.write(original_line + '\n')
