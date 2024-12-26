@@ -49,5 +49,11 @@ name_translation_dict = {
   '観客': 'Audience',
   '子供': 'Child',
   '副会長': 'Vice President',
+  '黒井': 'Kuroi',
+  '燐羽': 'Rinha',
+  '撫子': 'Nadeshiko',
+  '月花': 'Gekka',
+  '四音': 'Shion',
+  '燕': 'Tsubame',
   '{user}': '{user}'  # Producer custom name, leave intact
 }

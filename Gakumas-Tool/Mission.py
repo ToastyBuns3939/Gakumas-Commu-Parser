@@ -10,7 +10,7 @@ def process_json(input_data):
         if numbers:
             max_number = max(numbers, key=lambda x: int(x.replace(',', '')))
             plain_number = max_number.replace(',', '')
-            return f"{key} ({plain_number}/{plain_number})", f"{value} ({plain_number}/{plain_number})"
+            return f"{key} ({1}/{2})", f"{value} ({1}/{2})"
         else:
             return f"{key} (1/1)", f"{value} (1/1)"
     
