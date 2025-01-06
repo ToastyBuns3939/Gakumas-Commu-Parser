@@ -12,7 +12,7 @@ def main():
 
     while True:
         try:
-            option = input("GAKUEN IDOLM@STER commu text conversion tool\n1: Convert commu ADV .txt files to .xlsx files\n2: Inject commu translations from .xlsx to .txt files\n3: Convert UI files to .xlsx files\n4: Convert UI .xlsx files to .json\n5: Exit\nChoice: ").strip()
+            option = input("GAKUEN IDOLM@STER commu text conversion tool\n1: Convert commu ADV .txt files to .xlsx files\n2: Inject commu translations from .xlsx to .txt files\n3: Exit\nChoice: ").strip()
             
             if option == '1':
                 input_folder = filedialog.askdirectory(title="Select the input folder containing .txt files")
@@ -65,16 +65,9 @@ def main():
 
             elif option == '3':
                 sys.exit(0)
-
-            elif option == '4':
-                sys.exit(0)
-
-
-            elif option == '5':
-                sys.exit(0)
             
             else:
-                print("Invalid option. Please enter 1, 2, 3, 4, or 5.")
+                print("Invalid option. Please enter 1, 2, or 3.")
         
         except Exception as e:
             print(f"Error: {e}")
