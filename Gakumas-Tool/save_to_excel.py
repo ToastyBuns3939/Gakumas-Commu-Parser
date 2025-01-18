@@ -3,6 +3,15 @@ import xlsxwriter
 import os
 from name_dictionary import name_translation_dict
 
+def convert_to_string(data):
+    if data is None:
+        return ''
+    else:
+        return str(data)
+
+def row_to_strings(data_row):
+    return tuple(convert_to_string(a) for a in data_row)
+
 def translate_name(name):
     # Translate names using the provided dictionary
     return name_translation_dict.get(name.strip(), '')
@@ -13,7 +22,9 @@ def save_to_excel(raw_data_rows, output_path, worksheet_name):
     if os.path.exists(output_path):  # Check if output file already exists
         # Read data from workbook and check it has the right column headers
         workbook = openpyxl.load_workbook(filename=output_path)
-        existing_data_rows = list(workbook[worksheet_name].values)
+        existing_data_rows = [
+            row_to_strings(data_row)
+            for data_row in workbook[worksheet_name].values]
         existing_column_headers = existing_data_rows[0]
         if existing_column_headers != column_headers:
             raise Exception("Existing spreadsheet has incorrect column headers")
