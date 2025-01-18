@@ -16,12 +16,22 @@ def row_to_translation_line(data_row) -> TranslationLine:
     return TranslationLine(*(convert_to_string(a) for a in data_row))
 
 
+def is_blank(row: tuple):
+    return all(item is None for item in row)
+
+
 def get_tl_lines_from_spreadsheet(
     spreadsheet_path: str, worksheet_name: str
 ) -> list[TranslationLine]:
     # Read data from workbook
     workbook = openpyxl.load_workbook(filename=spreadsheet_path)
-    existing_rows = list(workbook[worksheet_name].values)
+    existing_rows = [
+        row
+        for row in workbook[worksheet_name].iter_rows(
+            min_col=1, max_col=5, values_only=True
+        )
+        if not is_blank(row)
+    ]
 
     # check it has the right column headers
     existing_column_headers = existing_rows[0]
