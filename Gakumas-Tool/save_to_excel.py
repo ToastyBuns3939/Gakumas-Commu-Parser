@@ -58,7 +58,9 @@ def save_to_excel(raw_lines: list[RawLine], output_path: str, worksheet_name: st
     # is the same as the raw data from the existing spreadsheet
     existing_raw_lines = [to_raw_line(tl_line) for tl_line in existing_tl_lines]
     if raw_lines == existing_raw_lines:
+        print(f"No change in raw lines in {output_path}, skipping...")
         return
 
     merged_tl_lines = merge_lines(raw_lines, existing_tl_lines)
     write_tl_lines_to_spreadsheet(merged_tl_lines, output_path, worksheet_name)
+    print(f"Conversion completed for {output_path}")

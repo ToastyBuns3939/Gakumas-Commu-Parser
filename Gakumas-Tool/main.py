@@ -50,7 +50,9 @@ def generate_xlsx_files(args):
     txt_directory = args["txt_directory"]
     xlsx_directory = args["xlsx_directory"]
     for file_name in os.listdir(txt_directory):
-        if file_name.endswith(".txt"):
+        try:
+            if not file_name.endswith(".txt"):
+                continue
             input_path = os.path.join(txt_directory, file_name)
             output_path = os.path.join(
                 xlsx_directory, os.path.splitext(file_name)[0] + ".xlsx"
@@ -61,11 +63,13 @@ def generate_xlsx_files(args):
             # Check if there are valid lines for extraction
             if raw_data_rows:
                 save_to_excel(raw_data_rows, output_path, "Sheet1")
-                print(f"Conversion completed for {file_name}")
             else:
                 print(f"No valid lines found in {file_name}. Skipping...")
+        except Exception as e:
+            print(f"Error generating xlsx for {file_name}:")
+            print(e)
 
-    print("Conversion to .xlsx completed successfully.")
+    print("Conversion to .xlsx completed.")
 
 
 def inject_xlsx_data(args):
@@ -73,7 +77,9 @@ def inject_xlsx_data(args):
     xlsx_directory = args["xlsx_directory"]
     out_txt_directory = args["out_txt_directory"]
     for file_name in os.listdir(in_txt_directory):
-        if file_name.endswith(".txt"):
+        try:
+            if not file_name.endswith(".txt"):
+                continue
             txt_path = os.path.join(in_txt_directory, file_name)
             xlsx_path = os.path.join(
                 xlsx_directory, os.path.splitext(file_name)[0] + ".xlsx"
@@ -82,8 +88,11 @@ def inject_xlsx_data(args):
 
             inject_translations(txt_path, xlsx_path, output_path)
             print(f"{file_name} processed")
+        except Exception as e:
+            print(f"Error injecting {file_name}:")
+            print(e)
 
-    print("Translation injection completed successfully.")
+    print("Translation injection completed.")
 
 
 def main():
