@@ -27,8 +27,14 @@ def inject_tl_line(group: CommuGroup, tl_lines_iterator: Iterator[TranslationLin
     if tl_line.text != group.get_property("text", ""):
         raise Exception("Raw text does not match")
 
-    group.modify_property("name", StringProperty(tl_line.translated_name))
-    group.modify_property("text", StringProperty(tl_line.translated_text))
+    translated_name = (
+        tl_line.translated_name if tl_line.translated_name != "" else tl_line.name
+    )
+    translated_text = (
+        tl_line.translated_text if tl_line.translated_text != "" else tl_line.text
+    )
+    group.modify_property("name", StringProperty(translated_name))
+    group.modify_property("text", StringProperty(translated_text))
 
 
 def inject_translations(txt_path, xlsx_path, output_path):
@@ -50,3 +56,4 @@ def inject_translations(txt_path, xlsx_path, output_path):
     # Write the modified commu groups to the output file
     with open(output_path, "w", encoding="utf-8") as file:
         file.write("\n".join([str(group) for group in groups]))
+        file.write("\n")

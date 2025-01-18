@@ -92,6 +92,14 @@ class CommuGroup:
         return "[" + " ".join(parts) + "]"
 
 
+def unescape_string(string: str):
+    return string.replace("\\n", "\n")
+
+
+def escape_string(string: str):
+    return string.replace("\n", "\\n")
+
+
 def parse_group_type(parsing_string: ParsingString):
     return parsing_string.retrieve(r"([a-z]+)(?=[ \]])")
 
@@ -106,14 +114,6 @@ def parse_string_data(parsing_string: ParsingString):
     # linebreak, backslash, square brackets, and equals, unless they are
     # in the combinations '\n' or '\='
     return parsing_string.retrieve(r"((?:[^\n\\\[\]=]|\\n|\\=)+)(?=[ \]])")
-
-
-def unescape_string(string: str):
-    return string.replace("\\n", "\n").replace("\\=", "=")
-
-
-def escape_string(string: str):
-    return string.replace("\n", "\\n").replace("=", "\\=")
 
 
 def parse_json_data(parsing_string: ParsingString):

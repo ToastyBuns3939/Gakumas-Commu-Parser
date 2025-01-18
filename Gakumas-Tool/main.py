@@ -88,6 +88,8 @@ def inject_xlsx_data(args):
 
             inject_translations(txt_path, xlsx_path, output_path)
             print(f"{file_name} processed")
+        except FileNotFoundError as e:
+            print(f"File {e.filename} not found, skipping...")
         except Exception as e:
             print(f"Error injecting {file_name}:")
             print(e)
