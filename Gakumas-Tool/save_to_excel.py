@@ -87,6 +87,8 @@ def write_to_spreadsheet(
     # Create the spreadsheet
     workbook = openpyxl.Workbook()
     worksheet = workbook.active
+    if not worksheet:
+        raise Exception("Workbook has no active worksheet!")
     worksheet.title = worksheet_name
 
     # Write data to the worksheet

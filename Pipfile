@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 pandas = "*"
 openpyxl = "*"
+types-openpyxl = "*"
 
 [dev-packages]
 
