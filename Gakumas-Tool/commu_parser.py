@@ -16,7 +16,7 @@ class ParsingString:
         self.string = self.string[match.end() :]
         return match.group(1)
 
-    def peek(self, pattern: re.Pattern):
+    def peek(self, pattern: re.Pattern[str] | str):
         match = re.match(pattern, self.string)
         return bool(match)
 
@@ -24,16 +24,44 @@ class ParsingString:
         return self.string == ""
 
 
+class Property:
+    def __init__(self, data):
+        self.data = data
+
+    def __str__(self):
+        return str(self.data)
+
+
+class GroupProperty(Property):
+    def __init__(self, data: "CommuGroup"):
+        super().__init__(data)
+
+
+class JsonProperty(Property):
+    def __init__(self, data: str):
+        super().__init__(data)
+
+
+class StringProperty(Property):
+    def __init__(self, data: str):
+        super().__init__(unescape_string(data))
+
+    def __str__(self):
+        return escape_string(self.data)
+
+
 class CommuGroup:
     def __init__(self, group_type: str):
         self.group_type = group_type
-        self.property_pairs = []
+        self.property_pairs: list[tuple[str, Property]] = []
 
-    def append_property(self, key: str, data):
-        self.property_pairs.append((key, data))
+    def append_property(self, key: str, property: Property):
+        self.property_pairs.append((key, property))
 
     def get_property(self, key: str, defaultValue):
-        found_properties = [pair[1] for pair in self.property_pairs if pair[0] == key]
+        found_properties = [
+            pair[1].data for pair in self.property_pairs if pair[0] == key
+        ]
         if len(found_properties) == 1:
             return found_properties[0]
         elif len(found_properties) == 0:
@@ -42,7 +70,7 @@ class CommuGroup:
             raise Exception(f"More than one property with key '{key}' found in group!")
 
     def get_property_list(self, key: str):
-        return [pair[1] for pair in self.property_pairs if pair[0] == key]
+        return [pair[1].data for pair in self.property_pairs if pair[0] == key]
 
     @classmethod
     def from_commu_line(cls, text_to_parse: str):
@@ -51,6 +79,12 @@ class CommuGroup:
         if not parsing_string.is_empty():
             raise Exception()
         return group
+
+    def __str__(self):
+        parts = [self.group_type] + [
+            f"{key}={property}" for (key, property) in self.property_pairs
+        ]
+        return "[" + " ".join(parts) + "]"
 
 
 def parse_group_type(parsing_string: ParsingString):
@@ -73,6 +107,10 @@ def unescape_string(string: str):
     return string.replace("\\n", "\n").replace("\\=", "=")
 
 
+def escape_string(string: str):
+    return string.replace("\n", "\\n").replace("=", "\\=")
+
+
 def parse_json_data(parsing_string: ParsingString):
     return parsing_string.retrieve(r"(\\\{\S+\\\})(?=[ \]])")
 
@@ -81,21 +119,22 @@ def parse_animation_curve_json_data(parsing_string: ParsingString):
     return parsing_string.retrieve(r"(AnimationCurve::\\\{\S+\\\})(?=[ \]])")
 
 
-def parse_group(parsing_string: ParsingString) -> tuple[CommuGroup, str]:
+def parse_group(parsing_string: ParsingString) -> CommuGroup:
     parsing_string.retrieve(r"(\[)")
     group_type = parse_group_type(parsing_string)
     group = CommuGroup(group_type)
     while not parsing_string.peek(r"\]"):
         parsing_string.retrieve(r"( )")
         key = parse_key(parsing_string)
+        property: Property
         if parsing_string.peek(r"\["):
-            data = parse_group(parsing_string)
+            property = GroupProperty(parse_group(parsing_string))
         elif parsing_string.peek(r"AnimationCurve::\\\{"):
-            data = parse_animation_curve_json_data(parsing_string)
+            property = JsonProperty(parse_animation_curve_json_data(parsing_string))
         elif parsing_string.peek(r"\\\{"):
-            data = parse_json_data(parsing_string)
+            property = JsonProperty(parse_json_data(parsing_string))
         else:
-            data = unescape_string(parse_string_data(parsing_string))
-        group.append_property(key, data)
+            property = StringProperty(parse_string_data(parsing_string))
+        group.append_property(key, property)
     parsing_string.retrieve(r"(\])")
     return group
