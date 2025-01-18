@@ -1,5 +1,5 @@
 import openpyxl
-import xlsxwriter
+import openpyxl.styles
 from name_dictionary import name_translation_dict
 from data_types import RawLine, TranslationLine
 
@@ -78,33 +78,52 @@ def write_to_spreadsheet(
         output_path: str,
         worksheet_name: str):
     # Create the spreadsheet
-    workbook = xlsxwriter.Workbook(output_path)
-    worksheet = workbook.add_worksheet(worksheet_name)
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = worksheet_name
 
     # Write data to the worksheet
-    worksheet.write_row(0, 0, column_headers)
+    worksheet.append(column_headers)
     for index, tl_line in enumerate(tl_lines):
-        worksheet.write_row(index + 1, 0, tl_line)
+        worksheet.append(tl_line)
         # Adjust row heights automatically based on the content
         text_line_count = tl_line.text.count('\n') + 1
         translated_text_line_count = tl_line.translated_text.count('\n') + 1
         row_height = (15 # Assuming default row height is 15 units
                         * max(text_line_count, translated_text_line_count))
-        worksheet.set_row(index + 1, row_height)
-
-    # Define a format for cell alignment and text wrapping
-    dialogue_format = workbook.add_format({'align': 'left', 'valign': 'top', 'text_wrap': True})
-    name_format = workbook.add_format({'align': 'center', 'valign': 'vcenter'})
+        worksheet.row_dimensions[index + 2].height = row_height
 
     # Set column widths
-    worksheet.set_column('A:A', 15, name_format)  # type column
-    worksheet.set_column('B:B', 15, name_format)  # name column
-    worksheet.set_column('C:C', 15, name_format)  # translated name column
-    worksheet.set_column('D:D', 70, dialogue_format)  # text column
-    worksheet.set_column('E:E', 70, dialogue_format)  # translated column
+    worksheet.column_dimensions['A'].width = 15  # type column
+    worksheet.column_dimensions['B'].width = 15  # name column
+    worksheet.column_dimensions['C'].width = 15  # translated name column
+    worksheet.column_dimensions['D'].width = 40  # text column
+    worksheet.column_dimensions['E'].width = 40  # translated column
+
+    # Define formats for cell alignment and text wrapping
+    dialogue_alignment = openpyxl.styles.Alignment(
+        horizontal = 'left',
+        vertical = 'top',
+        # Excel doesn't display multiple lines unless the
+        # cell has text wrapping
+        # wrap_text = True
+        # However Google Sheets does display multiple lines fine
+        # without text wrapping, which is preferrable
+    )
+    name_alignment = openpyxl.styles.Alignment(
+        horizontal = 'center',
+        vertical = 'center'
+    )
+    # Apply alignment formats
+    for row in worksheet['A:C']:
+        for cell in row:
+            cell.alignment = name_alignment
+    for row in worksheet['D:E']:
+        for cell in row:
+            cell.alignment = dialogue_alignment
 
     # Close the workbook to save the Excel file
-    workbook.close()
+    workbook.save(output_path)
 
 def save_to_excel(
         raw_lines: list[RawLine],
