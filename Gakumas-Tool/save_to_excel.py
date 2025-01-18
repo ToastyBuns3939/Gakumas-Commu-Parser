@@ -1,6 +1,5 @@
 import openpyxl
 import xlsxwriter
-import os
 from name_dictionary import name_translation_dict
 from data_types import RawLine, TranslationLine
 
@@ -33,32 +32,32 @@ def translate_name(name: str):
     return name_translation_dict.get(name.strip(), '')
 
 column_headers = ('type', 'name', 'translated name', 'text', 'translated text')
-def save_to_excel(
-        raw_lines: list[RawLine],
-        output_path: str,
-        worksheet_name: str):
-    existing_tl_lines = []
-    if os.path.exists(output_path):  # Check if output file already exists
-        # Read data from workbook and check it has the right column headers
-        workbook = openpyxl.load_workbook(filename=output_path)
+
+def get_tl_lines_from_spreadsheet(
+        spreadsheet_path: str,
+        worksheet_name: str
+        ) -> list[TranslationLine]:
+    try:
+        # Read data from workbook
+        workbook = openpyxl.load_workbook(filename=spreadsheet_path)
         existing_rows = list(workbook[worksheet_name].values)
+
+        # check it has the right column headers
         existing_column_headers = existing_rows[0]
         if existing_column_headers != column_headers:
             raise Exception("Existing spreadsheet has incorrect column headers")
-        existing_tl_lines = [
-            row_to_translation_line(data_row)
-            for data_row in existing_rows[1:]]
 
-    # Don't do anything if the data from the commu files (raw_data_rows)
-    # is the same as the data from the existing spreadsheet (existing_raw_data_rows)
-    existing_raw_lines = [to_raw_line(tl_line) for tl_line in existing_tl_lines]
-    if raw_lines == existing_raw_lines:
-        return
+        return [row_to_translation_line(data_row)
+                for data_row in existing_rows[1:]]
+    except FileNotFoundError:
+        return []
 
-    # Create a list of spreadsheet row data
+def merge_lines(
+        raw_lines: list[RawLine],
+        existing_tl_lines: list[TranslationLine]):
+    new_tl_lines: list[TranslationLine] = []
     # We insert the existing translations if the original strings in
     # the type, name, text columns are all the same
-    new_tl_lines: list[TranslationLine] = []
     for raw_line in raw_lines:
         try:
             tl_line = next(tl_line
@@ -72,14 +71,19 @@ def save_to_excel(
         except StopIteration: # if no matching row found
             tl_line = to_translation_line(raw_line)
         new_tl_lines.append(tl_line)
+    return new_tl_lines
 
+def write_to_spreadsheet(
+        tl_lines: list[TranslationLine],
+        output_path: str,
+        worksheet_name: str):
     # Create the spreadsheet
     workbook = xlsxwriter.Workbook(output_path)
     worksheet = workbook.add_worksheet(worksheet_name)
 
     # Write data to the worksheet
     worksheet.write_row(0, 0, column_headers)
-    for index, tl_line in enumerate(new_tl_lines):
+    for index, tl_line in enumerate(tl_lines):
         worksheet.write_row(index + 1, 0, tl_line)
         # Adjust row heights automatically based on the content
         text_line_count = tl_line.text.count('\n') + 1
@@ -101,3 +105,18 @@ def save_to_excel(
 
     # Close the workbook to save the Excel file
     workbook.close()
+
+def save_to_excel(
+        raw_lines: list[RawLine],
+        output_path: str,
+        worksheet_name: str):
+    existing_tl_lines = get_tl_lines_from_spreadsheet(output_path, worksheet_name)
+
+    # Don't do anything if the raw data from the commu files
+    # is the same as the raw data from the existing spreadsheet
+    existing_raw_lines = [to_raw_line(tl_line) for tl_line in existing_tl_lines]
+    if raw_lines == existing_raw_lines:
+        return
+
+    merged_tl_lines = merge_lines(raw_lines, existing_tl_lines)
+    write_to_spreadsheet(merged_tl_lines, output_path, worksheet_name)
