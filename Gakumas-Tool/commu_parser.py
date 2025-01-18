@@ -20,7 +20,10 @@ def parse_string_data(text_to_parse):
     # in the combinations '\n' or '\='
     if not match:
         raise Exception()
-    return match.group(1), text_to_parse[match.end(1):]
+    data = (match.group(1)
+            .replace('\\n', '\n')
+            .replace('\\=', '='))
+    return data, text_to_parse[match.end(1):]
 
 def parse_json_data(text_to_parse):
     match = re.match(r'(\\\{\S+\\\})([ \]])', text_to_parse)
@@ -54,3 +57,10 @@ def parse_group(text_to_parse):
             data, text_to_parse = parse_string_data(text_to_parse)
         group['property_pairs'].append((key, data))
     return group, text_to_parse[1:]
+
+def parse_commu_line(text_to_parse):
+    text_to_parse = text_to_parse.strip()
+    group, remainder = parse_group(text_to_parse)
+    if remainder != '':
+        raise Exception()
+    return group
