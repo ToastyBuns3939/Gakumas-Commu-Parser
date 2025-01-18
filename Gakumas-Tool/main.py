@@ -45,11 +45,11 @@ def generate_xlsx_files(args):
             input_path = os.path.join(txt_directory, file_name)
             output_path = os.path.join(xlsx_directory, os.path.splitext(file_name)[0] + '.xlsx')
 
-            names, texts, types, _, _, _ = extract_lines(input_path)
+            raw_data_rows = extract_lines(input_path)
             
             # Check if there are valid lines for extraction
-            if names:
-                save_to_excel(names, texts, types, output_path, 'Sheet1')
+            if raw_data_rows:
+                save_to_excel(raw_data_rows, output_path, 'Sheet1')
                 print(f"Conversion completed for {file_name}")
             else:
                 print(f"No valid lines found in {file_name}. Skipping...")
