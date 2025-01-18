@@ -11,8 +11,8 @@ def create_raw_data_rows(group: CommuGroup) -> list[RawLine]:
     group_type = group.group_type
 
     if group_type == "choicegroup":
-        # A choicegroup contains multiple 'choices' properties
-        # We create a data row from each 'choices' property
+        # A choicegroup contains multiple "choices" properties
+        # We create a data row from each "choices" property
         return [
             raw_line
             for subgroup in group.get_property_list("choices")

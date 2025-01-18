@@ -44,7 +44,7 @@ class JsonProperty(Property):
 
 class StringProperty(Property):
     def __init__(self, data: str):
-        super().__init__(unescape_string(data))
+        super().__init__(data)
 
     def __str__(self):
         return escape_string(self.data)
@@ -71,6 +71,11 @@ class CommuGroup:
 
     def get_property_list(self, key: str):
         return [pair[1].data for pair in self.property_pairs if pair[0] == key]
+
+    def modify_property(self, key: str, property: Property):
+        self.property_pairs = [
+            (key, property) if pair[0] == key else pair for pair in self.property_pairs
+        ]
 
     @classmethod
     def from_commu_line(cls, text_to_parse: str):
@@ -134,7 +139,9 @@ def parse_group(parsing_string: ParsingString) -> CommuGroup:
         elif parsing_string.peek(r"\\\{"):
             property = JsonProperty(parse_json_data(parsing_string))
         else:
-            property = StringProperty(parse_string_data(parsing_string))
+            property = StringProperty(
+                unescape_string(parse_string_data(parsing_string))
+            )
         group.append_property(key, property)
     parsing_string.retrieve(r"(\])")
     return group
