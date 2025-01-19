@@ -147,6 +147,9 @@ def inject_tl_files(args):
         if file_name.endswith(".txt")
     )
 
+    # Filter out tuples where the xlsx file doesn't exist
+    paths = (path_tuple for path_tuple in paths if os.path.exists(path_tuple[1]))
+
     # Filter out the xlsx files that were last modified before
     # the last run time
     lastrun_time = get_lastrun_time(xlsx_directory)
@@ -154,8 +157,7 @@ def inject_tl_files(args):
         paths = (
             path_tuple
             for path_tuple in paths
-            if os.path.exists(path_tuple[1])
-            and os.stat(path_tuple[1]).st_mtime > lastrun_time
+            if os.stat(path_tuple[1]).st_mtime > lastrun_time
         )
 
     start_time = time.perf_counter()
