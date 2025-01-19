@@ -1,6 +1,6 @@
 from typing import Iterator
 from data_types import TranslationLine
-from commu_parser import CommuGroup, StringProperty
+from commu_parser import CommuGroup
 from spreadsheet import get_tl_lines_from_spreadsheet
 
 
@@ -33,8 +33,8 @@ def inject_tl_line(group: CommuGroup, tl_lines_iterator: Iterator[TranslationLin
     translated_text = (
         tl_line.translated_text if tl_line.translated_text != "" else tl_line.text
     )
-    group.modify_property("name", StringProperty(translated_name))
-    group.modify_property("text", StringProperty(translated_text))
+    group.modify_property("name", translated_name)
+    group.modify_property("text", translated_text)
 
 
 def inject_translations(txt_path, xlsx_path, output_path):

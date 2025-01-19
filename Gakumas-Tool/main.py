@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import argparse
 import tkinter as tk
 from tkinter import filedialog
@@ -49,6 +50,7 @@ def create_argument_parser():
 def generate_xlsx_files(args):
     txt_directory = args["txt_directory"]
     xlsx_directory = args["xlsx_directory"]
+    start_time = time.perf_counter()
     for file_name in os.listdir(txt_directory):
         try:
             if not file_name.endswith(".txt"):
@@ -70,12 +72,15 @@ def generate_xlsx_files(args):
             print(e)
 
     print("Conversion to .xlsx completed.")
+    end_time = time.perf_counter()
+    print(f"Time taken: {end_time - start_time} seconds")
 
 
 def inject_xlsx_data(args):
     in_txt_directory = args["in_txt_directory"]
     xlsx_directory = args["xlsx_directory"]
     out_txt_directory = args["out_txt_directory"]
+    start_time = time.perf_counter()
     for file_name in os.listdir(in_txt_directory):
         try:
             if not file_name.endswith(".txt"):
@@ -95,6 +100,8 @@ def inject_xlsx_data(args):
             print(e)
 
     print("Translation injection completed.")
+    end_time = time.perf_counter()
+    print(f"Time taken: {end_time - start_time} seconds")
 
 
 def main():
