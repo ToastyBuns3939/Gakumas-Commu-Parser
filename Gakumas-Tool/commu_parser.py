@@ -1,5 +1,6 @@
 import re
 
+
 class ParsingString:
     def __init__(self, string: str):
         self.string = string
@@ -22,32 +23,36 @@ class ParsingString:
     def is_empty(self):
         return self.string == ""
 
+
 type PropertyValue = str | CommuGroup
+
 
 class CommuGroup:
     def __init__(self, group_type: str):
         self.group_type = group_type
-        self.property_pairs: list[tuple[str, PropertyValue]] = []
+        self.properties: dict[str, list[PropertyValue]] = {}
 
     def append_property(self, key: str, value: PropertyValue):
-        self.property_pairs.append((key, value))
+        if key not in self.properties:
+            self.properties[key] = [value]
+        else:
+            self.properties[key].append(value)
 
     def get_property(self, key: str, defaultValue: PropertyValue):
-        found_properties = [pair[1] for pair in self.property_pairs if pair[0] == key]
+        if key not in self.properties:
+            return defaultValue
+        found_properties = self.properties[key]
         if len(found_properties) == 1:
             return found_properties[0]
-        elif len(found_properties) == 0:
-            return defaultValue
         else:
             raise Exception(f"More than one property with key '{key}' found in group!")
 
     def get_property_list(self, key: str):
-        return [pair[1] for pair in self.property_pairs if pair[0] == key]
+        return self.properties[key]
 
     def modify_property(self, key: str, value: PropertyValue):
-        self.property_pairs = [
-            (key, value) if pair[0] == key else pair for pair in self.property_pairs
-        ]
+        if key in self.properties:
+            self.properties[key] = [value for _ in self.properties[key]]
 
     @classmethod
     def from_commu_line(cls, text_to_parse: str):
@@ -60,7 +65,8 @@ class CommuGroup:
     def __str__(self):
         parts = [self.group_type] + [
             f"{key}={property_value_to_string(value)}"
-            for (key, value) in self.property_pairs
+            for key, values in self.properties.items()
+                for value in values
         ]
         return "[" + " ".join(parts) + "]"
 
