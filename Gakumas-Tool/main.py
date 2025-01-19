@@ -27,6 +27,12 @@ def create_argument_parser():
     parser_extract.add_argument(
         "xlsx_directory", help="The directory to hold the spreadsheets"
     )
+    parser_extract.add_argument(
+        "-a",
+        "--all",
+        action="store_true",
+        help="Extracts data from all commu files, not just recently modified ones",
+    )
     parser_extract.set_defaults(func=generate_xlsx_files)
     parser_inject = subparsers.add_parser(
         "inject",
@@ -44,6 +50,12 @@ def create_argument_parser():
     parser_inject.add_argument(
         "out_txt_directory", help="The directory to hold the modified commu files"
     )
+    parser_inject.add_argument(
+        "-a",
+        "--all",
+        action="store_true",
+        help="Injects data from all excel files, not just recently modified ones",
+    )
     parser_inject.set_defaults(func=inject_tl_files)
     return parser
 
@@ -55,46 +67,77 @@ def generate_xlsx(input_path, output_path):
             print(f"No valid lines found in {input_path}. Skipping...")
         else:
             save_to_excel(raw_data_rows, output_path, "Sheet1")
+        return True
     except Exception as e:
         print(f"Error generating xlsx for {input_path}:", file=sys.stderr)
         TracebackException.from_exception(e).print()
+        return False
 
 
 def inject_tl(txt_path, xlsx_path, output_path):
     try:
         inject_translations(txt_path, xlsx_path, output_path)
         print(f"{txt_path} processed")
-    except FileNotFoundError as e:
-        print(f"File {e.filename} not found, skipping...")
+        return True
     except Exception as e:
         print(f"Error injecting into {txt_path}:", file=sys.stderr)
         TracebackException.from_exception(e).print()
+        return False
+
+
+def get_lastrun_time(directory):
+    lastrun_filename = os.path.join(directory, ".lastrun")
+    if os.path.exists(lastrun_filename):
+        return os.stat(lastrun_filename).st_mtime
+    else:
+        return None
+
+
+def set_lastrun_time(directory):
+    lastrun_filename = os.path.join(directory, ".lastrun")
+    with open(lastrun_filename, "w"):
+        pass
 
 
 def generate_xlsx_files(args):
     txt_directory = args["txt_directory"]
     xlsx_directory = args["xlsx_directory"]
-    paths = [
+    paths = (
         (
             os.path.join(txt_directory, file_name),
             os.path.join(xlsx_directory, os.path.splitext(file_name)[0] + ".xlsx"),
         )
         for file_name in os.listdir(txt_directory)
-        if file_name.endswith(".txt")
-    ]
+        if file_name.startswith("adv") and file_name.endswith(".txt")
+    )
+
+    # Filter out the txt files that were last modified before
+    # the last run time
+    lastrun_time = get_lastrun_time(txt_directory)
+    if lastrun_time is not None and not args["all"]:
+        paths = (
+            path_tuple
+            for path_tuple in paths
+            if os.stat(path_tuple[0]).st_mtime > lastrun_time
+        )
+
     start_time = time.perf_counter()
-    for path_tuple in paths:
-        generate_xlsx(*path_tuple)
+    is_successful = all(generate_xlsx(*path_tuple) for path_tuple in paths)
     end_time = time.perf_counter()
-    print("Conversion to .xlsx completed.")
-    print(f"Time taken: {end_time - start_time} seconds")
+
+    if is_successful:
+        set_lastrun_time(txt_directory)
+        print("Conversion to .xlsx completed successfully.")
+        print(f"Time taken: {end_time - start_time} seconds")
+    else:
+        print("Data extraction had some errors.")
 
 
 def inject_tl_files(args):
     in_txt_directory = args["in_txt_directory"]
     xlsx_directory = args["xlsx_directory"]
     out_txt_directory = args["out_txt_directory"]
-    paths = [
+    paths = (
         (
             os.path.join(in_txt_directory, file_name),
             os.path.join(xlsx_directory, os.path.splitext(file_name)[0] + ".xlsx"),
@@ -102,13 +145,29 @@ def inject_tl_files(args):
         )
         for file_name in os.listdir(in_txt_directory)
         if file_name.endswith(".txt")
-    ]
+    )
+
+    # Filter out the xlsx files that were last modified before
+    # the last run time
+    lastrun_time = get_lastrun_time(xlsx_directory)
+    if lastrun_time is not None and not args["all"]:
+        paths = (
+            path_tuple
+            for path_tuple in paths
+            if os.path.exists(path_tuple[1])
+            and os.stat(path_tuple[1]).st_mtime > lastrun_time
+        )
+
     start_time = time.perf_counter()
-    for path_tuple in paths:
-        inject_tl(*path_tuple)
+    is_successful = all(inject_tl(*path_tuple) for path_tuple in paths)
     end_time = time.perf_counter()
-    print("Translation injection completed.")
-    print(f"Time taken: {end_time - start_time} seconds")
+
+    if is_successful:
+        set_lastrun_time(xlsx_directory)
+        print("Translation injection completed successfully.")
+        print(f"Time taken: {end_time - start_time} seconds")
+    else:
+        print("Data injection had some errors.")
 
 
 def main():
