@@ -24,9 +24,12 @@ def create_raw_data_rows(group: CommuGroup) -> list[RawLine]:
     ):
         return []
 
-    name = group.get_property("name", "")
-    text = group.get_property("text", "")
-    return [RawLine(group_type=group_type, name=name, text=text)]
+    group_name = group.get_property("name", "")
+    group_text = group.get_property("text", "")
+    if (group_name == "" and group_text == ""):
+        return []
+
+    return [RawLine(group_type=group_type, name=group_name, text=group_text)]
 
 
 def extract_lines(file_path):
