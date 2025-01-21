@@ -1,38 +1,57 @@
-from commu_parser import CommuGroup
-from data_types import RawLine
-
-# Fields that need translating:
-# message.text, narration.text, choice.text, message.name
-# Fields that might need translating:
-# overwritecharactersetting.name, title.title
-
-
-def create_raw_data_rows(group: CommuGroup) -> list[RawLine]:
-    group_type = group.group_type
-
-    if group_type == "choicegroup":
-        # A choicegroup contains multiple "choices" properties
-        # We create a data row from each "choices" property
-        return [
-            raw_line
-            for subgroup in group.get_property_list("choices")
-            for raw_line in create_raw_data_rows(subgroup)
-        ]
-
-    if not (
-        group_type == "message" or group_type == "narration" or group_type == "choice"
-    ):
-        return []
-
-    name = group.get_property("name", "")
-    text = group.get_property("text", "")
-    return [RawLine(group_type=group_type, name=name, text=text)]
-
+import re
 
 def extract_lines(file_path):
-    with open(file_path, "r", encoding="utf-8") as file:
-        return [
-            raw_line
-            for line in file
-            for raw_line in create_raw_data_rows(CommuGroup.from_commu_line(line))
-        ]
+    names = []
+    texts = []
+    types = []
+    message_text_found = False
+    narration_text_found = False
+    choice_text_found = False
+
+    with open(file_path, 'r', encoding='utf-8') as file:
+        for line in file:
+            line = line.strip()
+            if line.startswith('[message'):
+                message_text_found = True
+                line_type = 'message'
+            elif line.startswith('[narration'):
+                narration_text_found = True
+                line_type = 'narration'
+            elif '[choice' in line:
+                choice_text_found = True
+                line_type = 'choice'
+            else:
+                continue
+
+            # Remove 'se', 'clip', and 'hide' fields if they exist
+            line = re.sub(r'se=.*?\]', ']', line)
+            line = re.sub(r'clip=.*?\]', ']', line)
+            line = re.sub(r'hide=.*?\]', ']', line)
+
+            if line_type == 'choice':
+                # Extract choice texts from the choicegroup
+                choice_texts = re.findall(r'choice text=(.*?)(?:\sname=|\s?\]|\[|$)', line)
+                for choice_text in choice_texts:
+                    names.append('')
+                    texts.append(choice_text.strip())
+                    types.append('choice')
+            else:
+                # Extract text and name fields
+                text_match = re.search(r'(?:message|narration) text=(.*?)(?:\sname=|\s?\]|\[|$)', line)
+                name_match = re.search(r'name=(.*?)(?:\s|\]|$)', line)
+
+                if text_match:
+                    jp_text = text_match.group(1).strip()
+                    jp_text = jp_text.replace('\n','\\n')
+                    if not name_match:
+                        names.append('')  # Append empty string if no name field found
+                    else:
+                        names.append(name_match.group(1).strip())
+                    texts.append(jp_text)
+                    types.append(line_type)
+
+    # Skip files without valid lines for extraction
+    if not (message_text_found or narration_text_found or choice_text_found):
+        return None, None, None, False, False, False
+
+    return names, texts, types, message_text_found, narration_text_found, choice_text_found
