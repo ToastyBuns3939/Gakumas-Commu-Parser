@@ -1,0 +1,3 @@
+[submodule "gakumasu-diff/Test/txt"]
+	path = gakumasu-diff/Test/txt
+	url = https://github.com/vertesan/gakumasu-diff.git
