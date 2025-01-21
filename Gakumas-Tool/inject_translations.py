@@ -19,12 +19,20 @@ def inject_tl_line(group: CommuGroup, tl_lines_iterator: Iterator[TranslationLin
     ):
         return
 
-    tl_line = tl_lines_iterator.__next__()
+    group_name = group.get_property("name", "")
+    group_text = group.get_property("text", "")
+    if (group_name == "" and group_text == ""):
+        return
+
+    try:
+        tl_line = tl_lines_iterator.__next__()
+    except StopIteration:
+        raise Exception("Spreadsheet has too few lines")
     if tl_line.group_type != group_type:
         raise Exception("Group type does not match")
-    if tl_line.name != group.get_property("name", ""):
+    if tl_line.name != group_name:
         raise Exception("Raw name property does not match")
-    if tl_line.text != group.get_property("text", ""):
+    if tl_line.text != group_text:
         raise Exception("Raw text does not match")
 
     translated_name = (
