@@ -12,7 +12,10 @@ class ParsingString:
         # Note re.match only matches the start of the string
         match = re.match(pattern, self.string)
         if not match:
-            raise Exception()
+            raise Exception(
+                f"Failed to retrieve pattern\n{pattern}\n"
+                + f"from string\n{self.string}"
+            )
         self.string = self.string[match.end() :]
         return match.group(1)
 
@@ -59,14 +62,14 @@ class CommuGroup:
         parsing_string = ParsingString(text_to_parse.strip())
         group = parse_group(parsing_string)
         if not parsing_string.is_empty():
-            raise Exception()
+            raise Exception("Additional text found on the end of text to parse!")
         return group
 
     def __str__(self):
         parts = [self.group_type] + [
             f"{key}={property_value_to_string(value)}"
             for key, values in self.properties.items()
-                for value in values
+            for value in values
         ]
         return "[" + " ".join(parts) + "]"
 

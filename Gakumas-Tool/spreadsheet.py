@@ -36,7 +36,11 @@ def get_tl_lines_from_spreadsheet(
     # check it has the right column headers
     existing_column_headers = existing_rows[0]
     if existing_column_headers != column_headers:
-        raise Exception("Existing spreadsheet has incorrect column headers")
+        raise Exception(
+            f"Existing spreadsheet has incorrect column headers!"
+            + f"Expected headers\n{",".join(column_headers)}\n"
+            + f"but spreadsheet has headers\n{",".join(existing_column_headers)}"
+        )
 
     return [row_to_translation_line(data_row) for data_row in existing_rows[1:]]
 
