@@ -4,25 +4,12 @@ from commu_parser import CommuGroup
 from spreadsheet import get_tl_lines_from_spreadsheet
 
 
-def inject_tl_line(
+def inject_tl_line_no_children(
     group: CommuGroup,
     group_line_number: int,
     tl_lines_iterator: enumerate[TranslationLine],
 ):
     group_type = group.group_type
-
-    if group_type == "choicegroup":
-        # A choicegroup contains multiple "choices" properties
-        # We inject tl_lines into each "choices" group
-        for subgroup in group.get_property_list("choices"):
-            inject_tl_line(subgroup, group_line_number, tl_lines_iterator)
-        return
-
-    if not (
-        group_type == "message" or group_type == "narration" or group_type == "choice"
-    ):
-        return
-
     group_name = group.get_property("name", "")
     group_text = group.get_property("text", "")
     if group_name == "" and group_text == "":
@@ -67,6 +54,16 @@ def inject_tl_line(
     group.modify_property("text", translated_text)
 
 
+def inject_tl_lines(
+    group: CommuGroup,
+    group_line_number: int,
+    tl_lines_iterator: enumerate[TranslationLine],
+):
+    inject_tl_line_no_children(group, group_line_number, tl_lines_iterator)
+    for child_group in group.get_children():
+        inject_tl_lines(child_group, group_line_number, tl_lines_iterator)
+
+
 def inject_translations(txt_path, xlsx_path, output_path):
     # Read lines from the spreadsheet
     tl_lines = get_tl_lines_from_spreadsheet(xlsx_path, "Sheet1")
@@ -81,7 +78,7 @@ def inject_translations(txt_path, xlsx_path, output_path):
     # and use the same iterator for all injections
     tl_lines_iterator = enumerate(tl_lines).__iter__()
     for index, group in enumerate(groups):
-        inject_tl_line(group, index + 1, tl_lines_iterator)
+        inject_tl_lines(group, index + 1, tl_lines_iterator)
 
     # Write the modified commu groups to the output file
     with open(output_path, "w", encoding="utf-8") as file:
