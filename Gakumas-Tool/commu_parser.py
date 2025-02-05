@@ -53,6 +53,14 @@ class CommuGroup:
     def get_property_list(self, key: str):
         return self.properties[key]
 
+    def get_children(self):
+        return [
+            value
+            for property_list in self.properties.values()
+            for value in property_list
+            if isinstance(value, CommuGroup)
+        ]
+
     def modify_property(self, key: str, value: PropertyValue):
         if key in self.properties:
             self.properties[key] = [value for _ in self.properties[key]]
