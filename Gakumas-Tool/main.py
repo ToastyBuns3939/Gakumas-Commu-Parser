@@ -3,6 +3,7 @@ import sys
 import time
 import argparse
 import tkinter as tk
+from collections import namedtuple
 from tkinter import filedialog
 from traceback import TracebackException
 from extract_lines import extract_lines
@@ -33,6 +34,12 @@ def create_argument_parser():
         action="store_true",
         help="Extracts data from all commu files, not just recently modified ones",
     )
+    parser_extract.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="Overwrites xlsx files even if there is no change in the raw lines",
+    )
     parser_extract.set_defaults(func=generate_xlsx_files)
     parser_inject = subparsers.add_parser(
         "inject",
@@ -60,13 +67,13 @@ def create_argument_parser():
     return parser
 
 
-def generate_xlsx(input_path, output_path):
+def generate_xlsx(input_path, output_path, force_overwrite):
     try:
         raw_data_rows = extract_lines(input_path)
         if not raw_data_rows:
             print(f"No valid lines found in {input_path}. Skipping...")
         else:
-            save_to_excel(raw_data_rows, output_path, "Sheet1")
+            save_to_excel(raw_data_rows, output_path, "Sheet1", force_overwrite)
         return True
     except Exception as e:
         print(f"Error generating xlsx for {input_path}:", file=sys.stderr)
@@ -102,8 +109,9 @@ def set_lastrun_time(directory):
 def generate_xlsx_files(args):
     txt_directory = args["txt_directory"]
     xlsx_directory = args["xlsx_directory"]
+    Path_pair = namedtuple("Path_pair", ["input_path", "output_path"])
     paths = (
-        (
+        Path_pair(
             os.path.join(txt_directory, file_name),
             os.path.join(xlsx_directory, os.path.splitext(file_name)[0] + ".xlsx"),
         )
@@ -122,7 +130,10 @@ def generate_xlsx_files(args):
         )
 
     start_time = time.perf_counter()
-    is_successful = all(generate_xlsx(*path_tuple) for path_tuple in paths)
+    is_successful = all(
+        generate_xlsx(path_tuple.input_path, path_tuple.output_path, args["force"])
+        for path_tuple in paths
+    )
     end_time = time.perf_counter()
 
     if is_successful:
