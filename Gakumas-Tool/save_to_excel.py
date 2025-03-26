@@ -48,7 +48,12 @@ def merge_lines(raw_lines: list[RawLine], existing_tl_lines: list[TranslationLin
     return new_tl_lines
 
 
-def save_to_excel(raw_lines: list[RawLine], output_path: str, worksheet_name: str):
+def save_to_excel(
+    raw_lines: list[RawLine],
+    output_path: str,
+    worksheet_name: str,
+    force_overwrite: bool,
+):
     try:
         existing_tl_lines = get_tl_lines_from_spreadsheet(output_path, worksheet_name)
     except FileNotFoundError:
@@ -56,8 +61,9 @@ def save_to_excel(raw_lines: list[RawLine], output_path: str, worksheet_name: st
 
     # Don't do anything if the raw data from the commu files
     # is the same as the raw data from the existing spreadsheet
+    # and we aren't force overwriting
     existing_raw_lines = [to_raw_line(tl_line) for tl_line in existing_tl_lines]
-    if raw_lines == existing_raw_lines:
+    if not force_overwrite and raw_lines == existing_raw_lines:
         print(f"No change in raw lines in {output_path}, skipping...")
         return
 

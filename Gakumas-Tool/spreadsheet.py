@@ -1,5 +1,6 @@
 import openpyxl
 import openpyxl.styles
+import os
 from data_types import TranslationLine
 
 column_headers = ("type", "name", "translated name", "text", "translated text")
@@ -34,7 +35,7 @@ def get_tl_lines_from_spreadsheet(
     ]
 
     # check it has the right column headers
-    existing_column_headers = existing_rows[0]
+    existing_column_headers = tuple(str(header) for header in existing_rows[0])
     if existing_column_headers != column_headers:
         raise Exception(
             f"Existing spreadsheet has incorrect column headers!"
@@ -71,8 +72,13 @@ def write_tl_lines_to_spreadsheet(
     worksheet.column_dimensions["A"].width = 15  # type column
     worksheet.column_dimensions["B"].width = 15  # name column
     worksheet.column_dimensions["C"].width = 15  # translated name column
-    worksheet.column_dimensions["D"].width = 40  # text column
-    worksheet.column_dimensions["E"].width = 40  # translated column
+    # Text columns have larger widths if it's a main story commu
+    if os.path.basename(output_path).startswith("adv_unit_"):
+        worksheet.column_dimensions["D"].width = 70  # text column
+        worksheet.column_dimensions["E"].width = 70  # translated column
+    else:
+        worksheet.column_dimensions["D"].width = 38  # text column
+        worksheet.column_dimensions["E"].width = 38  # translated column
 
     # Define formats for cell alignment and text wrapping
     dialogue_alignment = openpyxl.styles.Alignment(

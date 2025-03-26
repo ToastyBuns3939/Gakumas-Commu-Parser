@@ -24,6 +24,13 @@ To force the program to process all commu files, include the flag `-a`
 ```bash
 pipenv run python Gakumas-Tool/main.py extract -a txt_directory xlsx_directory
 ```
+By default, the program will skip generating commu files where the raw text
+data is the same.
+To force the program to generate commu files where the raw text is the same,
+include the flag `-f`
+```bash
+pipenv run python Gakumas-Tool/main.py extract -f txt_directory xlsx_directory
+```
 
 ### Injecting translations
 
