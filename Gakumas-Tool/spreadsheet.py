@@ -34,7 +34,7 @@ def get_tl_lines_from_spreadsheet(
     ]
 
     # check it has the right column headers
-    existing_column_headers = existing_rows[0]
+    existing_column_headers = tuple(str(header) for header in existing_rows[0])
     if existing_column_headers != column_headers:
         raise Exception(
             f"Existing spreadsheet has incorrect column headers!"
