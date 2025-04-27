@@ -21,7 +21,7 @@ def strip_defaults(description):
             description.pop(key)
 
 
-def get_index(description):
+def get_other_index(description):
     try:
         return other_descriptions.index(description)
     except ValueError:
@@ -59,46 +59,84 @@ def is_exam_customize(description):
     }
 
 
-def get_id(description):
-    id = ""
-
+def get_hash(description):
     target_id = description.get("targetId", "")
     if target_id != "":
-        id = f"id:{target_id}"
+        return f"id:{target_id}"
     elif is_plain_string(description):
-        id = f"text:{description["text"]}"
+        return f"text:{description["text"]}"
     elif is_exam_customize(description):
         custom_type = description["examDescriptionType"][len(exam_customise_head) :]
-        id = f"custom:{custom_type}:{description["text"]}"
+        return f"custom:{custom_type}:{description["text"]}"
+    else:
+        return ""
 
+
+def get_id(description):
+    id = get_hash(description)
     if id != "":
         if id not in descriptions:
             descriptions[id] = description
         if descriptions[id] != description:
-            return get_index(description)
+            return get_other_index(description)
         return id
+    return get_other_index(description)
 
-    return get_index(description)
+
+desc_primary_key_suffixes = [
+    ".produceDescriptionType",
+    ".examDescriptionType",
+    ".examEffectType",
+    ".produceCardCategory",
+    ".produceCardMovePositionType",
+    ".produceStepType",
+    ".targetId",
+]
 
 
-def process_json(filename: str, out_filename: str):
+def get_description_primary_key(primary_keys):
+    desc_primary_key_suffix = desc_primary_key_suffixes[0]
+    desc_primary_keys = [
+        key[: -len(desc_primary_key_suffix)]
+        for key in primary_keys
+        if key.endswith(desc_primary_key_suffix)
+    ]
+    if len(desc_primary_keys) == 0:
+        raise ValueError("No primary key with the right suffix!")
+
+    desc_primary_key = desc_primary_keys[0]
+    if all(
+        [
+            (desc_primary_key + suffix) in primary_keys
+            for suffix in desc_primary_key_suffixes
+        ]
+    ):
+        return desc_primary_key
+    else:
+        raise ValueError("Primary key does not have all the right suffixes!")
+
+
+def shorten_json(filename: str, out_filename: str):
     in_file = open(filename, encoding="utf8")
     json_object = json.load(in_file)
     in_file.close()
 
-    for item in json_object["data"]:
-        for description in item["produceDescriptions"]:
-            strip_defaults(description)
-        item_descriptions = item.pop("produceDescriptions")
-        descriptionIndexes = [get_id(desc_item) for desc_item in item_descriptions]
-        item["produceDescriptionIndexes"] = descriptionIndexes
+    desc_primary_key = get_description_primary_key(json_object["rules"]["primaryKeys"])
 
-    json_object["descriptions"] = dict(sorted(descriptions.items()))
+    for item in json_object["data"]:
+        for description in item[desc_primary_key]:
+            strip_defaults(description)
+        item_descriptions = item.pop(desc_primary_key)
+        descriptionIds = [get_id(desc_item) for desc_item in item_descriptions]
+        item[desc_primary_key + "Ids"] = descriptionIds
 
     out_file = open(out_filename, "w", encoding="utf8")
-    # json.dump(
-    #     json_object, out_file, ensure_ascii=False, indent=None, separators=(",", ":")
-    # )
     json.dump(json_object, out_file, ensure_ascii=False, indent=2)
     out_file.close()
-    pass
+
+
+def print_descriptions(out_filename: str):
+    sorted_descriptions = dict(sorted(descriptions.items()))
+    out_file = open(out_filename, "w", encoding="utf8")
+    json.dump(sorted_descriptions, out_file, ensure_ascii=False, indent=2)
+    out_file.close()

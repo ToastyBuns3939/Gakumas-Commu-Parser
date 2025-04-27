@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from descriptions import process_json
+from descriptions import shorten_json
 
 
 def create_argument_parser():
@@ -19,7 +19,7 @@ def create_argument_parser():
 def main():
     parser = create_argument_parser()
     args = parser.parse_args(sys.argv[1:])
-    process_json(vars(args)["json_file"], vars(args)["output_file"])
+    shorten_json(vars(args)["json_file"], vars(args)["output_file"])
 
 
 if __name__ == "__main__":
