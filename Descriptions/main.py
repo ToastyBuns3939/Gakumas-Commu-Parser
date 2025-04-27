@@ -1,7 +1,8 @@
 import argparse
 import sys
+import os
 
-from descriptions import shorten_json
+from descriptions import shorten_json, print_descriptions
 
 
 def create_argument_parser():
@@ -10,16 +11,37 @@ def create_argument_parser():
         description="Gakuen Idolm@ster card description conversion tool",
     )
     subparsers = parser.add_subparsers()
-    parser_extract = subparsers.add_parser("extract", help="Extracts data")
-    parser_extract.add_argument("json_file", help="The json file")
-    parser_extract.add_argument("output_file", help="The output file")
+    parser_extract = subparsers.add_parser("shorten", help="Shortens json files")
+    parser_extract.add_argument("json_dir", help="The folder containing the json files")
+    parser_extract.add_argument(
+        "out_dir", help="The folder to contain the output files"
+    )
     return parser
+
+
+def shorten_jsons(json_dir: str, out_dir: str):
+    print(os.listdir(json_dir))
+    basenames = [
+        file
+        for file in os.listdir(json_dir)
+        if os.path.isfile(os.path.join(json_dir, file)) and file.endswith(".json")
+    ]
+    for basename in basenames:
+        try:
+            json_file = os.path.join(json_dir, basename)
+            out_file = os.path.join(out_dir, basename)
+            shorten_json(json_file, out_file)
+            print(f"Shortened {basename}")
+        except ValueError:
+            print(f"Skipped {basename}")
+    print_descriptions(os.path.join(out_dir, "Descriptions.json"))
+    print("Written descriptions file")
 
 
 def main():
     parser = create_argument_parser()
     args = parser.parse_args(sys.argv[1:])
-    shorten_json(vars(args)["json_file"], vars(args)["output_file"])
+    shorten_jsons(vars(args)["json_dir"], vars(args)["out_dir"])
 
 
 if __name__ == "__main__":

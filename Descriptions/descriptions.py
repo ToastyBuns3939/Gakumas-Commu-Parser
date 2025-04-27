@@ -27,7 +27,7 @@ def get_other_index(description):
     except ValueError:
         other_descriptions.append(description)
         index = len(other_descriptions) - 1
-        descriptions[f"other:{index}"] = description
+        descriptions[f"~other:{index}"] = description
         return index
 
 
@@ -35,6 +35,17 @@ def is_plain_string(description):
     if (
         description.get("produceDescriptionType", "")
         != "ProduceDescriptionType_PlainText"
+    ):
+        return False
+    if "text" not in description:
+        description["text"] = ""
+    return description.keys() == {"produceDescriptionType", "text"}
+
+
+def is_diff_string(description):
+    if (
+        description.get("produceDescriptionType", "")
+        != "ProduceDescriptionType_DiffText"
     ):
         return False
     if "text" not in description:
@@ -64,7 +75,9 @@ def get_hash(description):
     if target_id != "":
         return f"id:{target_id}"
     elif is_plain_string(description):
-        return f"text:{description["text"]}"
+        return f"plaintext:{description["text"]}"
+    elif is_diff_string(description):
+        return f"difftext:{description["text"]}"
     elif is_exam_customize(description):
         custom_type = description["examDescriptionType"][len(exam_customise_head) :]
         return f"custom:{custom_type}:{description["text"]}"
