@@ -2,7 +2,7 @@ import argparse
 import sys
 import os
 
-from descriptions import shorten_json, print_descriptions
+from descriptions import DescriptionStore, shorten_json
 
 
 def create_argument_parser():
@@ -20,7 +20,7 @@ def create_argument_parser():
 
 
 def shorten_jsons(json_dir: str, out_dir: str):
-    print(os.listdir(json_dir))
+    description_store = DescriptionStore()
     basenames = [
         file
         for file in os.listdir(json_dir)
@@ -30,11 +30,11 @@ def shorten_jsons(json_dir: str, out_dir: str):
         try:
             json_file = os.path.join(json_dir, basename)
             out_file = os.path.join(out_dir, basename)
-            shorten_json(json_file, out_file)
+            shorten_json(description_store, json_file, out_file)
             print(f"Shortened {basename}")
         except ValueError:
             print(f"Skipped {basename}")
-    print_descriptions(os.path.join(out_dir, "Descriptions.json"))
+    description_store.print_descriptions(os.path.join(out_dir, "Descriptions.json"))
     print("Written descriptions file")
 
 
