@@ -120,14 +120,15 @@ class DescriptionStore:
         else:
             return ""
 
-    def get_other_index(self, description):
+    def get_other_id(self, description):
         try:
-            return self.other_descriptions.index(description)
+            index = self.other_descriptions.index(description)
+            return f"~other:{index}"
         except ValueError:
             self.other_descriptions.append(description)
             index = len(self.other_descriptions) - 1
             self.descriptions[f"~other:{index}"] = description
-            return index
+            return f"~other:{index}"
 
     def get_id(self, description):
         id = self.get_hash(description)
@@ -135,9 +136,9 @@ class DescriptionStore:
             if id not in self.descriptions:
                 self.descriptions[id] = description
             if self.descriptions[id] != description:
-                return self.get_other_index(description)
+                return self.get_other_id(description)
             return id
-        return self.get_other_index(description)
+        return self.get_other_id(description)
 
     def print_descriptions(self, out_filename: str):
         sorted_descriptions = dict(sorted(self.descriptions.items()))
