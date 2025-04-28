@@ -54,9 +54,18 @@ class DescriptionStore:
 
     @classmethod
     def strip_defaults(cls, description):
-        for key, value in cls.description_defaults.items():
-            if description[key] == value:
-                description.pop(key)
+        return dict(
+            (key, description[key])
+            for key, value in cls.description_defaults.items()
+            if description[key] != value
+        )
+
+    @classmethod
+    def fill_defaults(cls, description):
+        return dict(
+            (key, description.get(key, value))
+            for key, value in cls.description_defaults.items()
+        )
 
     @classmethod
     def is_plain_string(cls, description):
@@ -137,6 +146,12 @@ class DescriptionStore:
             return id
         return self.get_other_index(description)
 
+    def get_description(self, id):
+        if isinstance(id, int):
+            return self.other_descriptions[id]
+        else:
+            return self.id_descriptions[id]
+
     def print_descriptions(self, out_filename: str):
         sorted_descriptions = dict(sorted(self.id_descriptions.items()))
         out_file = open(out_filename, "w", encoding="utf8")
@@ -151,25 +166,48 @@ class DescriptionStore:
         )
         out_file.close()
 
+    def load_descriptions(self, in_filename: str):
+        in_file = open(in_filename, encoding="utf8")
+        json_object = json.load(in_file)
+        in_file.close()
 
-def shorten_json(description_store: DescriptionStore, filename: str, out_filename: str):
-    in_file = open(filename, encoding="utf8")
-    json_object = json.load(in_file)
-    in_file.close()
+        self.id_descriptions = json_object["id_descriptions"]
+        self.other_descriptions = json_object["other_descriptions"]
 
-    desc_primary_key = description_store.get_primary_key_prefix(
-        json_object["rules"]["primaryKeys"]
-    )
+    def shorten_json(self, in_filename: str, out_filename: str):
+        in_file = open(in_filename, encoding="utf8")
+        json_object = json.load(in_file)
+        in_file.close()
 
-    for item in json_object["data"]:
-        for description in item[desc_primary_key]:
-            description_store.strip_defaults(description)
-        item_descriptions = item.pop(desc_primary_key)
-        descriptionIds = [
-            description_store.get_id(desc_item) for desc_item in item_descriptions
-        ]
-        item[desc_primary_key + "Ids"] = descriptionIds
+        desc_primary_key = self.get_primary_key_prefix(
+            json_object["rules"]["primaryKeys"]
+        )
 
-    out_file = open(out_filename, "w", encoding="utf8")
-    json.dump(json_object, out_file, ensure_ascii=False, indent=2)
-    out_file.close()
+        for item in json_object["data"]:
+            item[desc_primary_key] = [
+                self.get_id(self.strip_defaults(desc_item))
+                for desc_item in item[desc_primary_key]
+            ]
+
+        out_file = open(out_filename, "w", encoding="utf8")
+        json.dump(json_object, out_file, ensure_ascii=False, indent=2)
+        out_file.close()
+
+    def lengthen_json(self, in_filename: str, out_filename: str):
+        in_file = open(in_filename, encoding="utf8")
+        json_object = json.load(in_file)
+        in_file.close()
+
+        desc_primary_key = self.get_primary_key_prefix(
+            json_object["rules"]["primaryKeys"]
+        )
+
+        for item in json_object["data"]:
+            item[desc_primary_key] = [
+                self.fill_defaults(self.get_description(id))
+                for id in item[desc_primary_key]
+            ]
+
+        out_file = open(out_filename, "w", encoding="utf8")
+        json.dump(json_object, out_file, ensure_ascii=False, indent=2)
+        out_file.close()
