@@ -2,11 +2,11 @@ import json
 
 
 class DescriptionStore:
-    descriptions: dict[str, dict]
+    id_descriptions: dict[str, dict]
     other_descriptions: list[dict]
 
     def __init__(self):
-        self.descriptions = {}
+        self.id_descriptions = {}
         self.other_descriptions = []
 
     description_defaults = {
@@ -120,30 +120,35 @@ class DescriptionStore:
         else:
             return ""
 
-    def get_other_id(self, description):
+    def get_other_index(self, description):
         try:
-            index = self.other_descriptions.index(description)
-            return f"~other:{index}"
+            return self.other_descriptions.index(description)
         except ValueError:
             self.other_descriptions.append(description)
-            index = len(self.other_descriptions) - 1
-            self.descriptions[f"~other:{index}"] = description
-            return f"~other:{index}"
+            return len(self.other_descriptions) - 1
 
     def get_id(self, description):
         id = self.get_hash(description)
         if id != "":
-            if id not in self.descriptions:
-                self.descriptions[id] = description
-            if self.descriptions[id] != description:
-                return self.get_other_id(description)
+            if id not in self.id_descriptions:
+                self.id_descriptions[id] = description
+            if self.id_descriptions[id] != description:
+                return self.get_other_index(description)
             return id
-        return self.get_other_id(description)
+        return self.get_other_index(description)
 
     def print_descriptions(self, out_filename: str):
-        sorted_descriptions = dict(sorted(self.descriptions.items()))
+        sorted_descriptions = dict(sorted(self.id_descriptions.items()))
         out_file = open(out_filename, "w", encoding="utf8")
-        json.dump(sorted_descriptions, out_file, ensure_ascii=False, indent=2)
+        json.dump(
+            {
+                "id_descriptions": sorted_descriptions,
+                "other_descriptions": self.other_descriptions,
+            },
+            out_file,
+            ensure_ascii=False,
+            indent=2,
+        )
         out_file.close()
 
 
