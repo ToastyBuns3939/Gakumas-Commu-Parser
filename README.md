@@ -48,6 +48,34 @@ To force the program to process all spreadsheet files, include the flag `-a`
 pipenv run python Gakumas-Tool/main.py inject -a in_txt_directory xlsx_directory out_txt_directory
 ```
 
+### Shortening .json files with descriptions
+
+Some .json files needed for translation (e.g. those in the folder `gakumasu-diff/json`
+in http://github.com/Kajaqq/gakumas-master-translation-en) are very large,
+due to having many repeated description objects.
+
+The script in the `Descriptions` folder shortens these files to facilitate editing
+and translation.
+It goes through each .json file in the input folder, and for those with description
+objects, generates a new .json file with all description objects replaced with key strings
+or indices instead.
+It also generates a `Descriptions.json` file, which contains a dictionary of all
+the description objects.
+
+You can then translate the text fields in the `Descriptions.json` file,
+and then run the lengthening script to generate the full .json files
+using the `Descriptions.json`.
+
+To shorten .json files in a folder, run
+```bash
+pipenv run python Descriptions/main.py shorten in_directory out_directory
+```
+
+To generate the full .json files, run
+```bash
+pipenv run python Descriptions/main.py lengthen in_directory out_directory
+```
+
 
 ## Other useful repositories
 
