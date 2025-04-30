@@ -68,34 +68,42 @@ def modify_excel_column_forward(input_filepath, output_filepath):
                 modified_value = re.sub(r'(――+)([-ー—])', r'\1――', modified_value)
 
                 # --- Rule for single hyphens, long dashes, and em dashes ---
-                # Convert to ―― ONLY if NOT strictly between two word characters.
-                # Use a custom function to check surrounding characters explicitly.
-                def convert_dash_unless_between_words(match):
+                # Convert to ―― ONLY if NOT matching specific exception patterns.
+                # Use a custom function to check surrounding characters and patterns explicitly.
+                def convert_dash_with_exceptions(match):
                     # Get the matched dash character
                     dash = match.group(0)
                     # Get the index of the matched dash
                     start_index = match.start()
-                    end_index = match.end()
+                    modified_value_str = match.string # Get the whole string being processed
 
-                    # Get the character immediately before the dash (if it exists)
-                    pre_char = modified_value[start_index - 1] if start_index > 0 else ''
-                    # Get the character immediately after the dash (if it exists)
-                    post_char = modified_value[end_index] if end_index < len(modified_value) else ''
+                    # Exception 1: Hyphen strictly between two word characters (\w-\w)
+                    if start_index > 0 and start_index < len(modified_value_str) - 1:
+                        pre_char = modified_value_str[start_index - 1]
+                        post_char = modified_value_str[start_index + 1]
+                        if re.match(r'\w', pre_char) and re.match(r'\w', post_char):
+                            return dash # Keep the hyphen
 
-                    # Check if BOTH the preceding and following characters are word characters (\w)
-                    # Use re.match to check if the character is a word character
-                    is_between_words = bool(re.match(r'\w', pre_char)) and bool(re.match(r'\w', post_char))
+                    # Exception 2: Hyphen immediately following {user} or {username} and followed by a word character
+                    if start_index >= len('{user}') and modified_value_str[start_index - len('{user}'):start_index] == '{user}':
+                         if start_index < len(modified_value_str) - 1 and re.match(r'\w', modified_value_str[start_index + 1]):
+                             return dash # Keep the hyphen
+                    if start_index >= len('{username}') and modified_value_str[start_index - len('{username}'):start_index] == '{username}':
+                        if start_index < len(modified_value_str) - 1 and re.match(r'\w', modified_value_str[start_index + 1]):
+                             return dash # Keep the hyphen
 
-                    if is_between_words:
-                        # If strictly between two word characters, keep the original dash
-                        return dash
-                    else:
-                        # Otherwise, convert to ――
-                        return '――'
+                    # Exception 3: Hyphen immediately following </r> and followed by a word character
+                    if start_index >= len('</r>') and modified_value_str[start_index - len('</r>'):start_index] == '</r>':
+                         if start_index < len(modified_value_str) - 1 and re.match(r'\w', modified_value_str[start_index + 1]):
+                             return dash # Keep the hyphen
+
+
+                    # If none of the exceptions match, convert the hyphen to ――
+                    return '――'
 
                 # Rule 9: Apply the conversion function to all single '-', 'ー', or '—'.
                 # This regex matches any single hyphen, long dash, or em dash.
-                modified_value = re.sub(r'([-ー—])', convert_dash_unless_between_words, modified_value)
+                modified_value = re.sub(r'([-ー—])', convert_dash_with_exceptions, modified_value)
 
 
                 # Update the cell value. openpyxl preserves formatting when updating value.
