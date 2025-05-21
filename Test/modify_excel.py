@@ -1,144 +1,213 @@
 import openpyxl
 import re
 import os
-import sys # Import the sys module to access command-line arguments
+import sys
 
-def modify_excel_column_forward(input_filepath, output_filepath):
+def replace_ellipsis(text):
+    """Rule: Replace '…' (U+2026 HORIZONTAL ELLIPSIS) with '...' (three full stops)."""
+    return text.replace("…", "...")
+
+def replace_tilde(text):
+    """Rule: Replace '~' (U+007E TILDE) with '～' (U+FF5E FULLWIDTH TILDE)."""
+    return text.replace("~", "～")
+
+def normalize_dashes(text):
+    """
+    Consolidates dash-related transformations for general dash normalization:
+    1. Removes spaces before -, ー, or — (but NOT before ――).
+    2. Converts various double dash forms (-- , ーー, ——, ──) to '――' (U+2015 HORIZONTAL BAR).
+    3. Extends existing '――' when immediately followed by another single dash (-, ー, or —).
+    """
+    # Rule 3: Remove space before -, ー, or —
+    text = re.sub(r'\s+([-ー—])', r'\1', text)
+
+    # Rules 4, 5, 6, 7: Convert various double dash forms to '――'
+    text = text.replace('--', '――')   # Double ASCII hyphen
+    text = text.replace('ーー', '――') # Double long dash (U+30FC KATAKANA-HIRAGANA PROLONGED SOUND MARK)
+    text = text.replace('——', '――') # Double em dash (U+2014 EM DASH)
+    text = text.replace('──', '――') # Double box-drawing hyphen (U+2500 BOX DRAWINGS LIGHT HORIZONTAL)
+
+    # Rule 8: Extend horizontal bar
+    text = re.sub(r'(――+)([-ー—])', r'\1――', text)
+    return text
+
+def convert_dash_with_exceptions(text):
+    """
+    Converts single hyphens (-, ー, —) to '――' (U+2015 HORIZONTAL BAR)
+    with specific exceptions to preserve hyphens used in:
+    1. Word-hyphen-word patterns (e.g., "well-being").
+    2. Placeholders like {user}- or {username}-.
+    3. HTML-like tags like </r>- followed by a word character.
+    """
+    def _convert_dash_with_exceptions_logic(match):
+        dash = match.group(0) # The matched dash character (-, ー, or —)
+        start_index = match.start()
+        full_string = match.string # The entire string being processed
+
+        # Exception 1: Hyphen strictly between two word characters (\w-\w)
+        # Checks if there's a word character before AND after the dash.
+        if start_index > 0 and start_index < len(full_string) - 1:
+            pre_char = full_string[start_index - 1]
+            post_char = full_string[start_index + 1]
+            if re.match(r'\w', pre_char) and re.match(r'\w', post_char):
+                return dash # Keep the hyphen as is
+
+        # Exception 2: Hyphen immediately following {user} or {username} and followed by a word character
+        # Checks for '{user}-word' or '{username}-word'
+        if start_index >= len('{user}') and full_string[start_index - len('{user}'):start_index] == '{user}':
+            if start_index < len(full_string) - 1 and re.match(r'\w', full_string[start_index + 1]):
+                return dash # Keep the hyphen
+        if start_index >= len('{username}') and full_string[start_index - len('{username}'):start_index] == '{username}':
+            if start_index < len(full_string) - 1 and re.match(r'\w', full_string[start_index + 1]):
+                return dash # Keep the hyphen
+
+        # Exception 3: Hyphen immediately following </r> and followed by a word character
+        # Checks for '</r>-word'
+        if start_index >= len('</r>') and full_string[start_index - len('</r>'):start_index] == '</r>':
+            if start_index < len(full_string) - 1 and re.match(r'\w', full_string[start_index + 1]):
+                return dash # Keep the hyphen
+
+        # If none of the exceptions match, convert the dash to '――'
+        return '――'
+
+    # Apply the custom conversion logic to all single '-', 'ー', or '—' characters.
+    return re.sub(r'([-ー—])', _convert_dash_with_exceptions_logic, text)
+
+def convert_em_to_italic_tags(text):
+    """
+    Rule: Replace all variations of opening <em...> tags (e.g., <em\=>, <em=>, <em>) with <i>,
+    and closing </em> tags with </i>.
+    """
+    # Updated Regex:
+    # r'<em(\\)?(\s*=\s*)?>'
+    #   <em        - matches literal "<em"
+    #   (\\)?      - matches an optional backslash (escaped with another backslash)
+    #   (\s*=\s*)? - matches an optional group for "=" with surrounding spaces
+    #   >          - matches literal ">"
+    text = re.sub(r'<em(\\)?(\s*=\s*)?>', '<i>', text, flags=re.IGNORECASE)
+    # Replace </em> with </i>.
+    text = text.replace('</em>', '</i>')
+    return text
+
+# --- Mapping of Function Names to Function Objects ---
+
+# This dictionary allows us to select functions by their string names
+TRANSFORMATION_FUNCTIONS = {
+    'replace_ellipsis': replace_ellipsis,
+    'replace_tilde': replace_tilde,
+    'normalize_dashes': normalize_dashes,
+    'convert_dash_with_exceptions': convert_dash_with_exceptions,
+    'convert_em_to_italic_tags': convert_em_to_italic_tags,
+}
+
+# --- Core Excel Modification Function ---
+
+def modify_excel_column_forward(input_filepath, output_filepath, functions_to_apply):
     """
     Modifies cells in the 'translated text' column of an Excel file
-    based on specific character replacement rules (converting to ――),
-    preserves original formatting.
+    based on a list of specified transformation functions.
+    Preserves original cell formatting.
+    **Only saves the file if actual changes were detected** in the 'translated text' column.
 
     Args:
         input_filepath (str): The path to the input Excel file.
         output_filepath (str): The path where the modified Excel file will be saved.
+        functions_to_apply (list): A list of function objects (from TRANSFORMATION_FUNCTIONS) to apply.
     """
     try:
-        # Load the workbook
         workbook = openpyxl.load_workbook(input_filepath)
         sheet = workbook.active # Work on the active sheet
 
-        # Find the column index for 'translated text'
+        # Find the column index for 'translated text' based on header row
         header_row = sheet[1] # Assuming header is in the first row
         translated_text_col_index = -1
         for col_index, cell in enumerate(header_row):
-            # Use strip().lower() for case-insensitive and whitespace-agnostic matching
+            # Case-insensitive and whitespace-agnostic matching for the header
             if isinstance(cell.value, str) and cell.value.strip().lower() == 'translated text':
-                translated_text_col_index = col_index + 1 # openpyxl is 1-indexed for columns
+                translated_text_col_index = col_index + 1 # openpyxl columns are 1-indexed
                 break
 
         if translated_text_col_index == -1:
             print(f"Warning: 'translated text' column not found in '{os.path.basename(input_filepath)}'. Skipping this file.")
-            return
+            return # Exit if the column isn't found
 
-        # Iterate through rows, starting from the second row (index 2 in openpyxl)
-        # to skip the header.
+        changes_detected = False # Flag to track if any cell value was actually modified
+
+        # Iterate through rows, starting from the second row to skip the header.
         for row_index in range(2, sheet.max_row + 1):
             cell = sheet.cell(row=row_index, column=translated_text_col_index)
-            cell_value = cell.value
+            original_value = cell.value # Store the cell's original value
 
-            # Check if the cell value is a string before attempting replacements
-            if isinstance(cell_value, str):
-                modified_value = cell_value
+            # Only process if the cell contains a string
+            if isinstance(original_value, str):
+                modified_value = original_value
 
-                # --- Character Replacement Rules ---
+                # Apply each selected transformation function in the defined order
+                for func in functions_to_apply:
+                    modified_value = func(modified_value)
 
-                # Rule 1: Replace "…" with "..."
-                modified_value = modified_value.replace("…", "...")
+                # If the modified value is different from the original, update the cell
+                if modified_value != original_value:
+                    cell.value = modified_value
+                    changes_detected = True # Set the flag to True
 
-                # Rule 2: Replace "~" with "～"
-                modified_value = modified_value.replace("~", "～")
-
-                # Rule 3: Remove space before -, ー, or — (but NOT before ――).
-                modified_value = re.sub(r'\s+([-ー—])', r'\1', modified_value)
-
-                # Rule 4: Convert pre-existing double hyphens '--' to horizontal bar '――'.
-                modified_value = modified_value.replace('--', '――')
-
-                # Rule 5: Convert pre-existing double long dashes 'ーー' to horizontal bar '――'.
-                modified_value = modified_value.replace('ーー', '――')
-
-                # Rule 6: Convert pre-existing double em dashes '——' (U+2014 U+2014) to horizontal bar '――'.
-                modified_value = modified_value.replace('——', '――')
-
-                # Rule 7: Convert pre-existing box-drawing double hyphen '──' to horizontal bar '――'.
-                modified_value = modified_value.replace('──', '――')
-
-                # Rule 8: Convert a single -, ー, or — immediately following one or more ―― to ――.
-                modified_value = re.sub(r'(――+)([-ー—])', r'\1――', modified_value)
-
-                # --- Rule for single hyphens, long dashes, and em dashes ---
-                # Convert to ―― ONLY if NOT matching specific exception patterns.
-                # Use a custom function to check surrounding characters and patterns explicitly.
-                def convert_dash_with_exceptions(match):
-                    # Get the matched dash character
-                    dash = match.group(0)
-                    # Get the index of the matched dash
-                    start_index = match.start()
-                    modified_value_str = match.string # Get the whole string being processed
-
-                    # Exception 1: Hyphen strictly between two word characters (\w-\w)
-                    if start_index > 0 and start_index < len(modified_value_str) - 1:
-                        pre_char = modified_value_str[start_index - 1]
-                        post_char = modified_value_str[start_index + 1]
-                        if re.match(r'\w', pre_char) and re.match(r'\w', post_char):
-                            return dash # Keep the hyphen
-
-                    # Exception 2: Hyphen immediately following {user} or {username} and followed by a word character
-                    if start_index >= len('{user}') and modified_value_str[start_index - len('{user}'):start_index] == '{user}':
-                         if start_index < len(modified_value_str) - 1 and re.match(r'\w', modified_value_str[start_index + 1]):
-                             return dash # Keep the hyphen
-                    if start_index >= len('{username}') and modified_value_str[start_index - len('{username}'):start_index] == '{username}':
-                        if start_index < len(modified_value_str) - 1 and re.match(r'\w', modified_value_str[start_index + 1]):
-                             return dash # Keep the hyphen
-
-                    # Exception 3: Hyphen immediately following </r> and followed by a word character
-                    if start_index >= len('</r>') and modified_value_str[start_index - len('</r>'):start_index] == '</r>':
-                         if start_index < len(modified_value_str) - 1 and re.match(r'\w', modified_value_str[start_index + 1]):
-                             return dash # Keep the hyphen
-
-
-                    # If none of the exceptions match, convert the hyphen to ――
-                    return '――'
-
-                # Rule 9: Apply the conversion function to all single '-', 'ー', or '—'.
-                # This regex matches any single hyphen, long dash, or em dash.
-                modified_value = re.sub(r'([-ー—])', convert_dash_with_exceptions, modified_value)
-
-
-                # Update the cell value. openpyxl preserves formatting when updating value.
-                cell.value = modified_value
-
-
-        # Save the modified workbook
-        workbook.save(output_filepath)
-
-        print(f"Successfully applied forward conversion to '{os.path.basename(input_filepath)}' and saved to '{os.path.basename(output_filepath)}'")
+        # Save the workbook only if changes were detected
+        if changes_detected:
+            workbook.save(output_filepath)
+            print(f"Successfully applied transformations to '{os.path.basename(input_filepath)}' and saved to '{os.path.basename(output_filepath)}'")
+        else:
+            print(f"No changes detected in '{os.path.basename(input_filepath)}' for the selected transformations. Skipping save.")
 
     except FileNotFoundError:
         print(f"Error: Input file not found at '{input_filepath}' during processing.")
     except Exception as e:
-        print(f"An error occurred while processing '{os.path.basename(input_filepath)}': {e}")
+        print(f"An unexpected error occurred while processing '{os.path.basename(input_filepath)}': {e}")
 
 
-# --- How to use the script ---
+# --- Script Execution Logic (main block) ---
+
 if __name__ == "__main__":
-    # Check if the correct number of command-line arguments are provided
-    # sys.argv[0] is the script name itself
-    # sys.argv[1] should be the input folder path
-    # sys.argv[2] should be the output folder path
-    if len(sys.argv) != 3:
-        print("Usage: python your_script_name.py <input_folder_path> <output_folder_path>")
+    # Check for correct number of command-line arguments
+    # Expected: script_name.py <input_folder> <output_folder> [optional_function_names...]
+    if len(sys.argv) < 3:
+        print("Usage: python modify_excel.py <input_folder_path> <output_folder_path> [function_name1] [function_name2]...")
+        print("\nAvailable functions (case-sensitive):")
+        for func_name in TRANSFORMATION_FUNCTIONS.keys():
+            print(f"  - {func_name}")
         sys.exit(1) # Exit with an error code
 
-    # Get input and output folder paths from command-line arguments
     input_folder = sys.argv[1]
     output_folder = sys.argv[2]
 
-    # The action is now fixed to 'forward' since only that function remains
-    action = 'forward'
+    # Determine which functions to apply based on command-line arguments
+    selected_function_names = sys.argv[3:]
+    if not selected_function_names:
+        # If no specific functions are provided, apply all available ones
+        print("No specific functions selected. Applying all available transformations by default.")
+        functions_to_run = list(TRANSFORMATION_FUNCTIONS.values())
+    else:
+        # Collect the actual function objects based on provided names
+        functions_to_run = []
+        invalid_functions = []
+        for name in selected_function_names:
+            if name in TRANSFORMATION_FUNCTIONS:
+                functions_to_run.append(TRANSFORMATION_FUNCTIONS[name])
+            else:
+                invalid_functions.append(name)
 
-    # Ensure output folder exists, create if necessary
+        # Report any unrecognized function names
+        if invalid_functions:
+            print(f"Warning: The following function(s) were not recognized and will be skipped: {', '.join(invalid_functions)}")
+            print("Please ensure function names are spelled correctly (they are case-sensitive).")
+
+        # Exit if no valid functions were specified at all
+        if not functions_to_run:
+            print("No valid functions were selected for execution. Exiting.")
+            sys.exit(1)
+
+    # --- Pre-processing Checks ---
+
+    # Ensure the output folder exists; create it if it doesn't
     if not os.path.exists(output_folder):
         try:
             os.makedirs(output_folder)
@@ -147,25 +216,25 @@ if __name__ == "__main__":
             print(f"Error: Could not create output folder '{output_folder}': {e}")
             sys.exit(1) # Exit if output folder cannot be created
 
-    # Check if the input folder exists before proceeding
+    # Check if the input folder exists and is a directory
     if not os.path.isdir(input_folder):
         print(f"Error: The input path '{input_folder}' is not a valid directory.")
         print("Please check the path and try again.")
-        sys.exit(1) # Exit if input path is not a directory
+        sys.exit(1) # Exit if input path is invalid
     else:
-        print(f"Processing Excel files in '{input_folder}' for {action} conversion...")
+        # --- Main Processing Loop ---
+        print(f"Processing Excel files in '{input_folder}'...")
+        # Display the names of the functions that will be applied for clarity
+        print(f"Applying transformations: {[func.__name__ for func in functions_to_run]}")
+
         # Iterate through all files in the input folder
         for filename in os.listdir(input_folder):
-            # Construct the full input file path
             input_filepath = os.path.join(input_folder, filename)
 
-            # Check if the item is a file and is an Excel file (xlsx format is best for openpyxl)
+            # Process only Excel files (specifically .xlsx format which openpyxl handles best)
             if os.path.isfile(input_filepath) and filename.endswith('.xlsx'):
-                # Construct the output file path using the original filename
                 output_filepath = os.path.join(output_folder, filename)
+                # Call the main modification function for each Excel file
+                modify_excel_column_forward(input_filepath, output_filepath, functions_to_run)
 
-                # Process the Excel file using the forward conversion function
-                modify_excel_column_forward(input_filepath, output_filepath)
-
-
-        print(f"\nBatch {action} conversion complete.")
+        print("\nBatch conversion complete.")
