@@ -73,7 +73,11 @@ def lengthen_jsons(args):
 def main():
     parser = create_argument_parser()
     args = parser.parse_args(sys.argv[1:])
-    args.func(vars(args))
+
+    if hasattr(args, 'func'):
+        args.func(vars(args))
+    else:
+        parser.print_help()
 
 
 if __name__ == "__main__":
