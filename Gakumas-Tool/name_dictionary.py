@@ -53,6 +53,7 @@ name_translation_dict = {
     "燐羽": "Rinha",
     "撫子": "Nadeshiko",
     "月花": "Gekka",
+    "優": "Yu",
     "四音": "Shion",
     "燕": "Tsubame",
     "{user}": "{user}",  # Producer custom name, leave intact
