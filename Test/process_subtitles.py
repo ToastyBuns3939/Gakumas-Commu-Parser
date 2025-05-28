@@ -1,6 +1,7 @@
 import json
 import sys
 
+# Works with srt_live_xxx-xxx files from gakumas MV .tln files. With unity AssetStudioGUI json export in mind. 
 # Check if the correct number of command-line arguments are provided
 if len(sys.argv) != 3:
     print("Usage: python your_script_name.py <input_json_file> <output_json_file>")
