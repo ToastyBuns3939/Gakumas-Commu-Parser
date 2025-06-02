@@ -23,7 +23,8 @@ def create_preview_xlsx(args):
     in_file.close()
     data = json_object["data"]
     rows = [
-        [item["id"], ""] + [desc["text"] for desc in item["produceDescriptions"]]
+        [item["id"], item["upgradeCount"], len(item["produceDescriptions"]), ""]
+        + [desc["text"] for desc in item["produceDescriptions"]]
         for item in data
     ]
 
@@ -39,3 +40,7 @@ def main():
     parser = create_argument_parser()
     args = parser.parse_args(sys.argv[1:])
     args.func(vars(args))
+
+
+if __name__ == "__main__":
+    main()
