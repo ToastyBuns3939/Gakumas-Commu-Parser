@@ -39,8 +39,23 @@ def create_preview_xlsx(args):
     in_file = open(in_filename, encoding="utf8")
     json_object = json.load(in_file)
     in_file.close()
-    data = json_object["data"]
-    rows = [
+
+    workbook = openpyxl.Workbook()
+    create_preview_worksheet(workbook, file_stem, json_object["data"])
+    workbook.save(out_filename)
+
+
+def create_preview_worksheet(workbook, sheet_name, data):
+    preview_worksheet = workbook.create_sheet(sheet_name + "-preview")
+    workbook.create_sheet(sheet_name)
+    rows = create_preview_rows(sheet_name, data)
+    for row in rows:
+        preview_worksheet.append(row)
+    format_preview_worksheet(preview_worksheet)
+
+
+def create_preview_rows(sheet_name, data):
+    return [
         [
             "Id",
             "Name",
@@ -54,25 +69,15 @@ def create_preview_xlsx(args):
             item["id"],
             item.get("name", ""),
             get_original_formula(index + 2),
-            get_translation_formula(file_stem, index + 2),
+            get_translation_formula(sheet_name, index + 2),
             len(item["produceDescriptions"]),
         ]
         + [desc["text"] for desc in item["produceDescriptions"]]
         for index, item in enumerate(data)
     ]
 
-    workbook = openpyxl.Workbook()
-    preview_worksheet = workbook.create_sheet(file_stem + "-preview")
-    translation_worksheet = workbook.create_sheet(file_stem)
 
-    for row in rows:
-        preview_worksheet.append(row)
-
-    format_worksheet(preview_worksheet)
-    workbook.save(out_filename)
-
-
-def format_worksheet(worksheet):
+def format_preview_worksheet(worksheet):
     worksheet.column_dimensions["A"].width = 30  # id column
     worksheet.column_dimensions["B"].width = 30  # name column
     worksheet.column_dimensions["C"].width = 60  # original text column
