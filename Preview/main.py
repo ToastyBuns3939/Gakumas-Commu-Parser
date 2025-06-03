@@ -62,13 +62,13 @@ def create_preview_xlsx(args):
     ]
 
     workbook = openpyxl.Workbook()
-    workbook.create_sheet(file_stem)
-    worksheet = workbook.active
-    worksheet.title = file_stem + "-preview"
-    for row in rows:
-        worksheet.append(row)
+    preview_worksheet = workbook.create_sheet(file_stem + "-preview")
+    translation_worksheet = workbook.create_sheet(file_stem)
 
-    format_worksheet(worksheet)
+    for row in rows:
+        preview_worksheet.append(row)
+
+    format_worksheet(preview_worksheet)
     workbook.save(out_filename)
 
 
