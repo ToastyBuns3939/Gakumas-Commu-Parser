@@ -62,11 +62,30 @@ def create_preview_xlsx(args):
     ]
 
     workbook = openpyxl.Workbook()
+    workbook.create_sheet(file_stem)
     worksheet = workbook.active
     worksheet.title = file_stem + "-preview"
     for row in rows:
         worksheet.append(row)
+
+    format_worksheet(worksheet)
     workbook.save(out_filename)
+
+
+def format_worksheet(worksheet):
+    worksheet.column_dimensions["A"].width = 30  # id column
+    worksheet.column_dimensions["B"].width = 30  # name column
+    worksheet.column_dimensions["C"].width = 60  # original text column
+    worksheet.column_dimensions["D"].width = 60  # translation column
+
+    alignment = openpyxl.styles.Alignment(
+        horizontal="left",
+        vertical="top",
+        wrap_text=True,
+    )
+    for row in worksheet["C:D"]:
+        for cell in row:
+            cell.alignment = alignment
 
 
 def main():
