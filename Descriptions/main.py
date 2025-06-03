@@ -33,9 +33,9 @@ def create_argument_parser():
     parser_lengthen.set_defaults(func=lengthen_jsons)
 
     parser_preview = subparsers.add_parser("preview", help="Create xlsx preview")
-    parser_preview.add_argument("in_file", help="Input json file")
-    parser_preview.add_argument("out_file", help="Output xlsx file")
-    parser_preview.set_defaults(func=create_preview_xlsx)
+    parser_preview.add_argument("in_dir", help="The folder containing the json files")
+    parser_preview.add_argument("out_file", help="The output xlsx file")
+    parser_preview.set_defaults(func=create_preview_xlsxs)
 
     return parser
 
@@ -83,18 +83,40 @@ def lengthen_jsons(args):
         print(f"Lengthened {basename}")
 
 
-def create_preview_xlsx(args):
-    in_filename = args["in_file"]
-    out_filename = args["out_file"]
+def create_preview_xlsxs(args):
+    in_dir = args["in_dir"]
+    out_file = args["out_file"]
+    basenames = [
+        basename
+        for basename in os.listdir(in_dir)
+        if os.path.isfile(os.path.join(in_dir, basename)) and basename.endswith(".json")
+    ]
+    workbook = openpyxl.Workbook()
+    default_worksheet = workbook.active
+    for basename in basenames:
+        try:
+            in_file = os.path.join(in_dir, basename)
+            create_preview_xlsx(in_file, workbook)
+            print(f"Created preview for {basename}")
+        except ValueError:
+            print(f"Skipped {basename}")
+    workbook.remove(default_worksheet)
+    workbook.save(out_file)
+
+
+def create_preview_xlsx(in_filename, workbook):
     file_stem = os.path.splitext(os.path.basename(in_filename))[0]
 
     in_file = open(in_filename, encoding="utf8")
     json_object = json.load(in_file)
     in_file.close()
 
-    workbook = openpyxl.Workbook()
-    create_preview_worksheet(workbook, file_stem, json_object["data"])
-    workbook.save(out_filename)
+    primary_key_prefix = DescriptionStore.get_primary_key_prefix(
+        json_object["rules"]["primaryKeys"]
+    )
+    create_preview_worksheet(
+        workbook, file_stem, json_object["data"], primary_key_prefix
+    )
 
 
 def main():

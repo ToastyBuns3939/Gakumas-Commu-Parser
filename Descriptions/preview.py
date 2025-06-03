@@ -17,16 +17,16 @@ def get_translation_formula(ref_sheet_name, row_index):
     )
 
 
-def create_preview_worksheet(workbook, sheet_name, data):
+def create_preview_worksheet(workbook, sheet_name, data, primary_key_prefix):
     preview_worksheet = workbook.create_sheet(sheet_name + "-preview")
     workbook.create_sheet(sheet_name)
-    rows = create_preview_rows(sheet_name, data)
+    rows = create_preview_rows(sheet_name, data, primary_key_prefix)
     for row in rows:
         preview_worksheet.append(row)
     format_preview_worksheet(preview_worksheet)
 
 
-def create_preview_rows(sheet_name, data):
+def create_preview_rows(sheet_name, data, primary_key_prefix):
     return [
         [
             "Id",
@@ -42,9 +42,9 @@ def create_preview_rows(sheet_name, data):
             item.get("name", ""),
             get_original_formula(index + 2),
             get_translation_formula(sheet_name, index + 2),
-            len(item["produceDescriptions"]),
+            len(item[primary_key_prefix]),
         ]
-        + [desc["text"] for desc in item["produceDescriptions"]]
+        + [desc["text"] for desc in item[primary_key_prefix]]
         for index, item in enumerate(data)
     ]
 
