@@ -23,7 +23,17 @@ def create_preview_xlsx(args):
     in_file.close()
     data = json_object["data"]
     rows = [
-        [item["id"], item["upgradeCount"], len(item["produceDescriptions"]), ""]
+        ["Number of description parts:", ""],
+        [
+            "Japanese",
+            "Translation 1",
+            "Translation 2",
+            "Name",
+            "Number of description parts",
+            "Description parts",
+        ],
+    ] + [
+        ["", "", "", item["name"], len(item["produceDescriptions"])]
         + [desc["text"] for desc in item["produceDescriptions"]]
         for item in data
     ]
