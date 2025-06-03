@@ -4,16 +4,18 @@ from openpyxl.worksheet.formula import ArrayFormula
 
 def get_original_formula(row_index):
     desc_cells = f"OFFSET($F{row_index}, 0, 0, 1, $E{row_index})"
-    return ArrayFormula(f"C{row_index}", f'=TEXTJOIN("", FALSE, {desc_cells})')
+    formula = f'TEXTJOIN("", FALSE, {desc_cells})'
+    return ArrayFormula(f"C{row_index}", f'=IF($E{row_index}=0, "", {formula})')
 
 
 def get_translation_formula(ref_sheet_name, row_index):
     desc_cells = f"OFFSET($F{row_index}, 0, 0, 1, $E{row_index})"
     search_range = f"{ref_sheet_name}!$A:$B"
     search = f"VLOOKUP({desc_cells}, {search_range}, 2, false)"
+    formula = f'TEXTJOIN("", FALSE, IFERROR({search}, {desc_cells}))'
     return ArrayFormula(
         f"D{row_index}",
-        f'=TEXTJOIN("", FALSE, IFERROR({search}, {desc_cells}))',
+        f'=IF($E{row_index}=0, "", {formula})',
     )
 
 
