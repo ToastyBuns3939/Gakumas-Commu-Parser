@@ -2,7 +2,11 @@ import argparse
 import sys
 import os
 
+import json
+import openpyxl
+
 from descriptions import DescriptionStore
+from preview import create_preview_worksheet
 
 
 def create_argument_parser():
@@ -11,12 +15,14 @@ def create_argument_parser():
         description="Gakuen Idolm@ster card description conversion tool",
     )
     subparsers = parser.add_subparsers()
+
     parser_shorten = subparsers.add_parser("shorten", help="Shortens json files")
     parser_shorten.add_argument("in_dir", help="The folder containing the json files")
     parser_shorten.add_argument(
         "out_dir", help="The folder to contain the output files"
     )
     parser_shorten.set_defaults(func=shorten_jsons)
+
     parser_lengthen = subparsers.add_parser("lengthen", help="Lengthens json files")
     parser_lengthen.add_argument(
         "in_dir", help="The folder containing the shortened json files"
@@ -25,7 +31,14 @@ def create_argument_parser():
         "out_dir", help="The folder to contain the output files"
     )
     parser_lengthen.set_defaults(func=lengthen_jsons)
+
+    parser_preview = subparsers.add_parser("preview", help="Create xlsx preview")
+    parser_preview.add_argument("in_dir", help="The folder containing the json files")
+    parser_preview.add_argument("out_file", help="The output xlsx file")
+    parser_preview.set_defaults(func=create_preview_xlsxs)
+
     return parser
+
 
 descriptions_filename = "Descriptions.json"
 
@@ -68,6 +81,42 @@ def lengthen_jsons(args):
         out_file = os.path.join(out_dir, basename)
         description_store.lengthen_json(in_file, out_file)
         print(f"Lengthened {basename}")
+
+
+def create_preview_xlsxs(args):
+    in_dir = args["in_dir"]
+    out_file = args["out_file"]
+    basenames = [
+        basename
+        for basename in os.listdir(in_dir)
+        if os.path.isfile(os.path.join(in_dir, basename)) and basename.endswith(".json")
+    ]
+    workbook = openpyxl.Workbook()
+    default_worksheet = workbook.active
+    for basename in basenames:
+        try:
+            in_file = os.path.join(in_dir, basename)
+            create_preview_xlsx(in_file, workbook)
+            print(f"Created preview for {basename}")
+        except ValueError:
+            print(f"Skipped {basename}")
+    workbook.remove(default_worksheet)
+    workbook.save(out_file)
+
+
+def create_preview_xlsx(in_filename, workbook):
+    file_stem = os.path.splitext(os.path.basename(in_filename))[0]
+
+    in_file = open(in_filename, encoding="utf8")
+    json_object = json.load(in_file)
+    in_file.close()
+
+    primary_key_prefix = DescriptionStore.get_primary_key_prefix(
+        json_object["rules"]["primaryKeys"]
+    )
+    create_preview_worksheet(
+        workbook, file_stem, json_object["data"], primary_key_prefix
+    )
 
 
 def main():

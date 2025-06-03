@@ -48,6 +48,43 @@ To force the program to process all spreadsheet files, include the flag `-a`
 pipenv run python Gakumas-Tool/main.py inject -a in_txt_directory xlsx_directory out_txt_directory
 ```
 
+### Creating preview spreadsheets
+
+Some .json files contain descriptions that are built up from many
+smaller description parts.
+Currently, to translate, we are given a list of the description parts
+and we translate them individually.
+
+To help with this translation process, the scripts in the `Descriptions` folder
+can generate a spreadsheet containing formulas that can reassemble the
+translated descriptions from the translated description parts.
+By pasting in the translated description part data, you can use this sheet to check
+what the translated description will look like.
+
+To create preview spreadsheets, run
+```bash
+pipenv run python Descriptions/main.py preview in_directory out_file
+```
+
+`in_directory` should be a folder containing the **untranslated** .json files,
+and `out_file` should be a filename with the `.xlsx` extension.
+
+This will generate an Excel containing several sheets.
+(Please open this Excel file in Google Sheets, the formulas are bugged in
+Microsoft Excel for some reason.)
+For each .json file in the input folder with description objects,
+it generates a preview sheet with the formulas and a blank data sheet.
+
+For example, if the input folder contains the file `ProduceCard.json`,
+which contains description objects, then the script will generate a preview sheet called
+`ProduceCard-preview` containing the formulas, and a data sheet called `ProduceCard`
+which is blank.
+
+You can then paste in the original description parts in column A of
+the data sheet, and the corresponding translations in column B of the
+data sheet.
+The translated description will then be reassembled in column D of the preview sheet.
+
 ### Shortening .json files with descriptions
 
 Some .json files needed for translation (e.g. those in the folder `gakumasu-diff/json`
