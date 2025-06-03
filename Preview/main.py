@@ -2,6 +2,8 @@ import argparse
 import json
 import sys
 import openpyxl
+from openpyxl.worksheet.formula import ArrayFormula
+from pathlib import Path
 
 
 def create_argument_parser():
@@ -14,33 +16,56 @@ def create_argument_parser():
     return parser
 
 
+def get_original_formula(row_index):
+    desc_cells = f"OFFSET($F{row_index}, 0, 0, 1, $E{row_index})"
+    return ArrayFormula(f"C{row_index}", f'=TEXTJOIN("", FALSE, {desc_cells})')
+
+
+def get_translation_formula(ref_sheet_name, row_index):
+    desc_cells = f"OFFSET($F{row_index}, 0, 0, 1, $E{row_index})"
+    search_range = (
+        f"OFFSET({ref_sheet_name}!$A$2, 0, 0, COUNTA({ref_sheet_name}!$A:$A) - 1, 2)"
+    )
+    search = f"VLOOKUP({desc_cells}, {search_range}, 2, false)"
+    return ArrayFormula(
+        f"D{row_index}",
+        f'=TEXTJOIN("", FALSE, IFERROR({search}, {desc_cells}))',
+    )
+
+
 def create_preview_xlsx(args):
     in_filename = args["in_file"]
     out_filename = args["out_file"]
+    file_stem = Path(in_filename).stem
 
     in_file = open(in_filename, encoding="utf8")
     json_object = json.load(in_file)
     in_file.close()
     data = json_object["data"]
     rows = [
-        ["Number of description parts:", ""],
         [
-            "Japanese",
-            "Translation 1",
-            "Translation 2",
+            "Id",
             "Name",
+            "Japanese",
+            "Translation",
             "Number of description parts",
             "Description parts",
         ],
     ] + [
-        ["", "", "", item["name"], len(item["produceDescriptions"])]
+        [
+            item["id"],
+            item.get("name", ""),
+            get_original_formula(index + 2),
+            get_translation_formula(file_stem, index + 2),
+            len(item["produceDescriptions"]),
+        ]
         + [desc["text"] for desc in item["produceDescriptions"]]
-        for item in data
+        for index, item in enumerate(data)
     ]
 
     workbook = openpyxl.Workbook()
     worksheet = workbook.active
-    worksheet.title = "ProduceCard-preview"
+    worksheet.title = file_stem + "-preview"
     for row in rows:
         worksheet.append(row)
     workbook.save(out_filename)
