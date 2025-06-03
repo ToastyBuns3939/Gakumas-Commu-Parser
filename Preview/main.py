@@ -23,9 +23,7 @@ def get_original_formula(row_index):
 
 def get_translation_formula(ref_sheet_name, row_index):
     desc_cells = f"OFFSET($F{row_index}, 0, 0, 1, $E{row_index})"
-    search_range = (
-        f"OFFSET({ref_sheet_name}!$A$2, 0, 0, COUNTA({ref_sheet_name}!$A:$A) - 1, 2)"
-    )
+    search_range = f"{ref_sheet_name}!$A:$B"
     search = f"VLOOKUP({desc_cells}, {search_range}, 2, false)"
     return ArrayFormula(
         f"D{row_index}",
@@ -46,7 +44,7 @@ def create_preview_xlsx(args):
         [
             "Id",
             "Name",
-            "Japanese",
+            "Original",
             "Translation",
             "Number of description parts",
             "Description parts",
