@@ -56,5 +56,7 @@ name_translation_dict = {
     "優": "Yu",
     "四音": "Shion",
     "燕": "Tsubame",
+    "ことねの妹": "Kotone's Little sister",
+    "香名江": "Kanae",
     "{user}": "{user}",  # Producer custom name, leave intact
 }
