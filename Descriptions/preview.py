@@ -27,6 +27,11 @@ def create_preview_worksheet(workbook, sheet_name, data, primary_key_prefix):
         preview_worksheet.append(row)
     format_preview_worksheet(preview_worksheet)
 
+def get_desc_text(desc):
+    if desc["targetId"] == "Label_StyleDot":
+        return "✦"
+    else:
+        return desc["text"]
 
 def create_preview_rows(sheet_name, data, primary_key_prefix):
     return [
@@ -46,7 +51,7 @@ def create_preview_rows(sheet_name, data, primary_key_prefix):
             get_translation_formula(sheet_name, index + 2),
             len(item[primary_key_prefix]),
         ]
-        + [desc["text"] for desc in item[primary_key_prefix]]
+        + [get_desc_text(desc) for desc in item[primary_key_prefix]]
         for index, item in enumerate(data)
     ]
 
